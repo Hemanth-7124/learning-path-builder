@@ -1,7 +1,9 @@
-import type { Module, LearningPath, ModuleStatus } from '~/types'
+import type { Module, LearningPath, ModuleStatus, QuizAttempt, Certificate } from '~/types'
 
 const LEARNING_PATH_KEY = 'learning-path'
 const CUSTOM_MODULES_KEY = 'custom-modules'
+const QUIZ_ATTEMPTS_KEY = 'quiz-attempts'
+const CERTIFICATES_KEY = 'certificates'
 
 export const useLearningPath = () => {
   // Sample modules data
@@ -192,6 +194,10 @@ export const useLearningPath = () => {
 
   const customModules = useState<Module[]>('custom-modules', () => [])
 
+  // Quiz-related state
+  const quizAttempts = useState<QuizAttempt[]>('quiz-attempts', () => [])
+  const certificates = useState<Certificate[]>('certificates', () => [])
+
   // Computed available modules that combines sample and custom modules
   const availableModules = computed(() => [...sampleModules, ...customModules.value])
 
@@ -251,6 +257,8 @@ export const useLearningPath = () => {
     if (import.meta.client) {
       localStorage.setItem(LEARNING_PATH_KEY, JSON.stringify(learningPath.value))
       localStorage.setItem(CUSTOM_MODULES_KEY, JSON.stringify(customModules.value))
+      localStorage.setItem(QUIZ_ATTEMPTS_KEY, JSON.stringify(quizAttempts.value))
+      localStorage.setItem(CERTIFICATES_KEY, JSON.stringify(certificates.value))
     }
   }
 
@@ -289,6 +297,40 @@ export const useLearningPath = () => {
         }
       } else {
         customModules.value = []
+      }
+
+      // Load quiz attempts
+      const savedQuizAttempts = localStorage.getItem(QUIZ_ATTEMPTS_KEY)
+      if (savedQuizAttempts) {
+        try {
+          const attempts = JSON.parse(savedQuizAttempts)
+          quizAttempts.value = Array.isArray(attempts) ? attempts.map((attempt: any) => ({
+            ...attempt,
+            timestamp: new Date(attempt.timestamp)
+          })) : []
+        } catch (error) {
+          console.error('Error loading quiz attempts from localStorage:', error)
+          quizAttempts.value = []
+        }
+      } else {
+        quizAttempts.value = []
+      }
+
+      // Load certificates
+      const savedCertificates = localStorage.getItem(CERTIFICATES_KEY)
+      if (savedCertificates) {
+        try {
+          const certs = JSON.parse(savedCertificates)
+          certificates.value = Array.isArray(certs) ? certs.map((cert: any) => ({
+            ...cert,
+            completionDate: new Date(cert.completionDate)
+          })) : []
+        } catch (error) {
+          console.error('Error loading certificates from localStorage:', error)
+          certificates.value = []
+        }
+      } else {
+        certificates.value = []
       }
     }
   }
@@ -404,6 +446,17 @@ export const useLearningPath = () => {
         if (!learningPath.value.completedModules.includes(moduleId)) {
           learningPath.value.completedModules.push(moduleId)
         }
+      } else if (status === 'quiz-passed') {
+        module.progress = 90
+        module.quizCompleted = true
+        if (learningPath.value.completedModules) {
+          learningPath.value.completedModules = learningPath.value.completedModules.filter(id => id !== moduleId)
+        }
+      } else if (status === 'quiz-required') {
+        module.progress = 75
+        if (learningPath.value.completedModules) {
+          learningPath.value.completedModules = learningPath.value.completedModules.filter(id => id !== moduleId)
+        }
       } else if (status === 'in-progress') {
         module.progress = 50
         if (learningPath.value.completedModules) {
@@ -411,6 +464,7 @@ export const useLearningPath = () => {
         }
       } else if (status === 'not-started') {
         module.progress = 0
+        module.quizCompleted = false
         if (learningPath.value.completedModules) {
           learningPath.value.completedModules = learningPath.value.completedModules.filter(id => id !== moduleId)
         }
@@ -487,6 +541,86 @@ export const useLearningPath = () => {
     return getModuleStatus(moduleId) === 'completed'
   }
 
+  // Quiz-related Methods
+  const completeQuiz = (moduleId: string, quizAttempt: QuizAttempt): void => {
+    // Add quiz attempt to the attempts array
+    quizAttempts.value.push(quizAttempt)
+
+    // Find the module and update its quiz-related fields
+    const module = learningPath.value.modules.find(m => m.id === moduleId)
+    if (module) {
+      if (!module.quizAttempts) {
+        module.quizAttempts = []
+      }
+      module.quizAttempts.push(quizAttempt)
+
+      if (quizAttempt.passed) {
+        // Update module status to quiz-passed
+        updateModuleStatus(moduleId, 'quiz-passed')
+      }
+    }
+
+    saveToLocalStorage()
+  }
+
+  const getQuizAttempts = (moduleId: string): QuizAttempt[] => {
+    return quizAttempts.value.filter(attempt => attempt.moduleId === moduleId)
+  }
+
+  const getQuizStatistics = (moduleId: string) => {
+    const attempts = getQuizAttempts(moduleId)
+
+    if (attempts.length === 0) {
+      return {
+        totalAttempts: 0,
+        passedAttempts: 0,
+        failedAttempts: 0,
+        bestScore: 0,
+        averageScore: 0,
+        averageTimeSpent: 0,
+        passRate: 0
+      }
+    }
+
+    const passedAttempts = attempts.filter(attempt => attempt.passed)
+    const scores = attempts.map(attempt => attempt.score)
+    const timesSpent = attempts.map(attempt => attempt.timeSpent)
+
+    return {
+      totalAttempts: attempts.length,
+      passedAttempts: passedAttempts.length,
+      failedAttempts: attempts.length - passedAttempts.length,
+      bestScore: Math.max(...scores),
+      averageScore: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
+      averageTimeSpent: Math.round(timesSpent.reduce((a, b) => a + b, 0) / timesSpent.length),
+      passRate: Math.round((passedAttempts.length / attempts.length) * 100)
+    }
+  }
+
+  const addCertificate = (certificate: Certificate): void => {
+    certificates.value.push(certificate)
+
+    // Update the module with certificate information
+    const module = learningPath.value.modules.find(m => m.id === certificate.moduleId)
+    if (module) {
+      module.certificate = certificate
+    }
+
+    saveToLocalStorage()
+  }
+
+  const getCertificates = (): Certificate[] => {
+    return certificates.value
+  }
+
+  const getCertificate = (moduleId: string): Certificate | null => {
+    return certificates.value.find(cert => cert.moduleId === moduleId) || null
+  }
+
+  const hasCertificate = (moduleId: string): boolean => {
+    return certificates.value.some(cert => cert.moduleId === moduleId)
+  }
+
   // Load from localStorage on initialization
   onMounted(() => {
     loadFromLocalStorage()
@@ -496,6 +630,8 @@ export const useLearningPath = () => {
     // State
     learningPath: readonly(learningPath),
     availableModules: readonly(availableModules),
+    quizAttempts: readonly(quizAttempts),
+    certificates: readonly(certificates),
 
     // Computed
     totalDuration,
@@ -527,6 +663,15 @@ export const useLearningPath = () => {
     getCompletedModulesCount,
     getOverallProgress,
     isInProgress,
-    isCompleted
+    isCompleted,
+
+    // Quiz-related Methods
+    completeQuiz,
+    getQuizAttempts,
+    getQuizStatistics,
+    addCertificate,
+    getCertificates,
+    getCertificate,
+    hasCertificate
   }
 }

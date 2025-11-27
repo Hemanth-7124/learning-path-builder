@@ -107,7 +107,15 @@
 
 <script setup lang="ts">
 import type { Module } from '~/types'
-import { ClockIcon, TrashIcon, XMarkIcon, CheckCircleIcon, PlayIcon } from '@heroicons/vue/24/outline'
+import {
+  ClockIcon,
+  TrashIcon,
+  XMarkIcon,
+  CheckCircleIcon,
+  PlayIcon,
+  QuestionMarkCircleIcon,
+  TrophyIcon
+} from '@heroicons/vue/24/outline'
 
 interface Props {
   module: Module
@@ -145,7 +153,8 @@ const emit = defineEmits<{
   remove: [moduleId: string]
   delete: [moduleId: string]
   preview: [module: Module]
-  'update-status': [moduleId: string, status: 'not-started' | 'in-progress' | 'completed']
+  'update-status': [moduleId: string, status: 'not-started' | 'in-progress' | 'quiz-required' | 'quiz-passed' | 'completed']
+  'start-quiz': [module: Module]
 }>()
 
 const { formatDuration } = useLearningPath()
@@ -182,27 +191,48 @@ const handleCardClick = () => {
 
 const handleStatusToggle = () => {
   const currentStatus = props.module.status || 'not-started'
-  let newStatus: 'not-started' | 'in-progress' | 'completed'
 
-  if (currentStatus === 'not-started') {
-    newStatus = 'in-progress'
-  } else if (currentStatus === 'in-progress') {
-    newStatus = 'completed'
-  } else {
-    newStatus = 'not-started'
+  switch (currentStatus) {
+    case 'not-started':
+      emit('update-status', props.module.id, 'in-progress')
+      break
+    case 'in-progress':
+      // Change to quiz-required instead of directly to completed
+      emit('update-status', props.module.id, 'quiz-required')
+      // Emit start-quiz event to trigger the quiz modal
+      emit('start-quiz', props.module)
+      break
+    case 'quiz-required':
+      // If user clicks again during quiz-required, start the quiz
+      emit('start-quiz', props.module)
+      break
+    case 'quiz-passed':
+      // Allow moving from quiz-passed to completed
+      emit('update-status', props.module.id, 'completed')
+      break
+    case 'completed':
+      // Reset to not-started
+      emit('update-status', props.module.id, 'not-started')
+      break
+    default:
+      emit('update-status', props.module.id, 'not-started')
   }
-
-  emit('update-status', props.module.id, newStatus)
 }
 
 const getStatusIcon = () => {
   const status = props.module.status || 'not-started'
-  if (status === 'completed') {
-    return CheckCircleIcon
-  } else if (status === 'in-progress') {
-    return PlayIcon
+  switch (status) {
+    case 'completed':
+      return CheckCircleIcon
+    case 'in-progress':
+      return PlayIcon
+    case 'quiz-required':
+      return QuestionMarkCircleIcon
+    case 'quiz-passed':
+      return TrophyIcon
+    default:
+      return null
   }
-  return null
 }
 
 const getStatusClass = () => {
@@ -210,9 +240,11 @@ const getStatusClass = () => {
   const classes = {
     'not-started': 'text-gray-400 bg-gray-100 hover:bg-gray-200 hover:text-gray-600',
     'in-progress': 'text-blue-600 bg-blue-100 hover:bg-blue-200 hover:text-blue-700',
+    'quiz-required': 'text-orange-600 bg-orange-100 hover:bg-orange-200 hover:text-orange-700',
+    'quiz-passed': 'text-purple-600 bg-purple-100 hover:bg-purple-200 hover:text-purple-700',
     'completed': 'text-green-600 bg-green-100 hover:bg-green-200 hover:text-green-700'
   }
-  return classes[status]
+  return classes[status] || classes['not-started']
 }
 </script>
 

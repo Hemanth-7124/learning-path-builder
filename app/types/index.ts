@@ -7,8 +7,12 @@ export interface Module {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
   icon?: string
   // Progress Tracking fields
-  status?: 'not-started' | 'in-progress' | 'completed'
+  status?: 'not-started' | 'in-progress' | 'quiz-required' | 'quiz-passed' | 'completed'
   progress?: number // 0-100 percentage
+  // Quiz System fields
+  quizCompleted?: boolean
+  quizAttempts?: QuizAttempt[]
+  certificate?: Certificate
   // Module Preview fields
   prerequisites?: string[]
   learningObjectives?: string[]
@@ -53,6 +57,8 @@ export const DIFFICULTY_LEVELS = [
 export const MODULE_STATUS = [
   'not-started',
   'in-progress',
+  'quiz-required',
+  'quiz-passed',
   'completed'
 ] as const
 
@@ -65,3 +71,43 @@ export interface Resource {
   url?: string
   description?: string
 }
+
+// Quiz System Interfaces
+export interface Question {
+  id: string
+  text: string
+  category: string
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
+  options: string[]
+  correctAnswer: number
+  explanation?: string
+}
+
+export interface QuizAttempt {
+  id: string
+  moduleId: string
+  questions: Question[]
+  userAnswers: number[]
+  score: number
+  passed: boolean
+  timestamp: Date
+  timeSpent: number // in seconds
+}
+
+export interface Certificate {
+  id: string
+  moduleId: string
+  moduleName: string
+  learnerName: string
+  completionDate: Date
+  score: number
+  certificateId: string
+}
+
+// Quiz Configuration Constants
+export const QUIZ_CONFIG = {
+  QUESTIONS_PER_QUIZ: 5,
+  PASSING_SCORE: 100, // 100% required - all 5 questions must be correct
+  ATTEMPT_COOLDOWN: 120000, // 2 minutes in milliseconds
+  MAX_ATTEMPTS: 3
+} as const

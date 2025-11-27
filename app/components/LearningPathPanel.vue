@@ -178,6 +178,7 @@
                 @dragend="handleModuleDragEnd"
                 @update-status="updateModuleStatus"
                 @preview="handleModulePreview"
+                @start-quiz="handleStartQuiz"
                 custom-class="rounded-2xl border-2 border-gray-200 backdrop-blur-sm transition-all duration-300 hover:border-indigo-400 hover:shadow-2xl bg-white/95 group-hover:bg-white"
               />
             </div>
@@ -256,11 +257,31 @@
       @remove-from-path="removeFromLearningPath"
       @update-status="updateModuleStatus"
     />
+
+    <!-- Quiz Modal -->
+    <QuizModal
+      v-if="showQuizModal && quizModule"
+      :module="quizModule"
+      :is-open="showQuizModal"
+      @close="showQuizModal = false"
+      @quiz-completed="handleQuizCompleted"
+      @generate-certificate="handleGenerateCertificate"
+    />
+
+    <!-- Certificate Modal -->
+    <CertificateModal
+      v-if="showCertificateModal && certificateModule"
+      :module="certificateModule"
+      :quiz-result="certificateQuizResult || undefined"
+      @close="showCertificateModal = false"
+      @certificate-generated="handleCertificateGenerated"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Module } from '../types'
+import type { Module, QuizAttempt, Certificate } from '../types'
+import { useQuiz } from '~/composables/useQuiz'
 
 import {
   BookOpenIcon,
@@ -272,6 +293,8 @@ import {
 // Import ExportModal component
 import ExportModal from './ExportModal.vue'
 import ModulePreview from './ModulePreview.vue'
+import QuizModal from './QuizModal.vue'
+import CertificateModal from './CertificateModal.vue'
 
 const {
   learningPath,
@@ -284,8 +307,14 @@ const {
   updateModuleStatus,
   getCompletedModulesCount,
   getOverallProgress,
-  isInLearningPath
+  isInLearningPath,
+  completeQuiz,
+  addCertificate,
+  getCertificate
 } = useLearningPath()
+
+// Use quiz composable
+const { canAttemptQuiz, getRemainingCooldown } = useQuiz()
 
 const isDragOver = ref(false)
 const draggedModuleIndex = ref<number | null>(null)
@@ -297,6 +326,15 @@ const showExportModal = ref(false)
 // Preview modal state
 const showPreviewModal = ref(false)
 const previewModule = ref<Module | null>(null)
+
+// Quiz modal state
+const showQuizModal = ref(false)
+const quizModule = ref<Module | null>(null)
+
+// Certificate modal state
+const showCertificateModal = ref(false)
+const certificateModule = ref<Module | null>(null)
+const certificateQuizResult = ref<QuizAttempt | null>(null)
 
 const handleDragOver = (event: DragEvent) => {
   event.preventDefault()
@@ -406,6 +444,65 @@ const exportAsJSON = () => {
 const handleModulePreview = (module: Module) => {
   previewModule.value = module
   showPreviewModal.value = true
+}
+
+const handleStartQuiz = (module: Module) => {
+  // Check if user can attempt quiz
+  if (!canAttemptQuiz(module.id)) {
+    const remainingTime = getRemainingCooldown(module.id)
+    const minutes = Math.ceil(remainingTime / 60000)
+    alert(`You must wait ${minutes} minute(s) before attempting the quiz again.`)
+    return
+  }
+
+  quizModule.value = module
+  showQuizModal.value = true
+}
+
+const handleQuizCompleted = (quizResult: QuizAttempt) => {
+  if (quizModule.value) {
+    // Complete the quiz in the learning path
+    completeQuiz(quizModule.value.id, quizResult)
+
+    // Close quiz modal
+    showQuizModal.value = false
+    quizModule.value = null
+  }
+}
+
+const handleGenerateCertificate = (module: Module, quizResult: QuizAttempt) => {
+  console.log('=== handleGenerateCertificate called ===')
+  console.log('Module:', module.title)
+  console.log('Quiz result:', quizResult)
+
+  certificateModule.value = module
+  certificateQuizResult.value = quizResult
+
+  console.log('Setting showCertificateModal to true')
+  console.log('Certificate module set to:', certificateModule.value)
+  console.log('Certificate quiz result set to:', certificateQuizResult.value)
+
+  // Close quiz modal and open certificate modal
+  showQuizModal.value = false
+  showCertificateModal.value = true
+
+  console.log('showCertificateModal.value:', showCertificateModal.value)
+  console.log('Should show certificate modal now')
+}
+
+const handleCertificateGenerated = (certificate: Certificate) => {
+  // Save certificate using useLearningPath
+  addCertificate(certificate)
+
+  // Update module to completed status
+  if (certificateModule.value) {
+    updateModuleStatus(certificateModule.value.id, 'completed')
+  }
+
+  // Close certificate modal
+  showCertificateModal.value = false
+  certificateModule.value = null
+  certificateQuizResult.value = null
 }
 
 const handleExportError = (message: string) => {
