@@ -87,6 +87,7 @@ interface Props {
   showDeleteButton?: boolean
   customClass?: string
   draggable?: boolean
+  index?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -97,7 +98,8 @@ const props = withDefaults(defineProps<Props>(), {
   showRemoveButton: false,
   showDeleteButton: false,
   customClass: '',
-  draggable: true
+  draggable: true,
+  index: undefined
 })
 
 const emit = defineEmits<{

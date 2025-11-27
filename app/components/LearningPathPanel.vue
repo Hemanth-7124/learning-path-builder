@@ -137,11 +137,14 @@
             <div class="relative">
               <ModuleCard
                 :module="module"
-                :is-in-path="true"
+                :allow-duplicate="true"
                 show-remove-button
                 :show-add-button="false"
-                :draggable="false"
+                draggable
+                :index="index"
                 @remove="removeFromPath"
+                @dragstart="handleModuleDragStart($event, index)"
+                @dragend="handleModuleDragEnd"
                 custom-class="rounded-2xl border-2 border-gray-200 backdrop-blur-sm transition-all duration-300 hover:border-indigo-400 hover:shadow-2xl bg-white/95 group-hover:bg-white"
               />
             </div>
