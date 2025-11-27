@@ -136,61 +136,7 @@
           </div>
         </div>
 
-        <!-- Progress Section (if module is in learning path) -->
-        <div v-if="showProgressControls && isInLearningPath">
-          <h3 class="mb-3 text-lg font-semibold text-gray-900">Progress Tracking</h3>
-          <div class="space-y-4">
-            <div>
-              <div class="flex justify-between items-center mb-2">
-                <span class="text-sm text-gray-600">Current Progress</span>
-                <span class="text-sm font-medium text-gray-900">{{ module.progress || 0 }}%</span>
-              </div>
-              <div class="w-full h-3 bg-gray-200 rounded-full">
-                <div
-                  class="h-3 rounded-full transition-all duration-300"
-                  :class="{
-                    'bg-blue-500': (module.progress || 0) < 100,
-                    'bg-green-500': (module.progress || 0) === 100
-                  }"
-                  :style="{ width: `${module.progress || 0}%` }"
-                ></div>
-              </div>
-            </div>
-
-            <div class="flex gap-2">
-              <button
-                @click="updateModuleStatus(module.id, 'not-started')"
-                :class="{
-                  'bg-gray-100 text-gray-700': (module.status || 'not-started') === 'not-started',
-                  'bg-white text-gray-500 hover:bg-gray-50': (module.status || 'not-started') !== 'not-started'
-                }"
-                class="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 transition-colors"
-              >
-                Not Started
-              </button>
-              <button
-                @click="updateModuleStatus(module.id, 'in-progress')"
-                :class="{
-                  'bg-blue-100 text-blue-700': module.status === 'in-progress',
-                  'bg-white text-gray-500 hover:bg-gray-50': module.status !== 'in-progress'
-                }"
-                class="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 transition-colors"
-              >
-                In Progress
-              </button>
-              <button
-                @click="updateModuleStatus(module.id, 'completed')"
-                :class="{
-                  'bg-green-100 text-green-700': module.status === 'completed',
-                  'bg-white text-gray-500 hover:bg-gray-50': module.status !== 'completed'
-                }"
-                class="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 transition-colors"
-              >
-                Completed
-              </button>
-            </div>
-          </div>
-        </div>
+     
       </div>
 
       <!-- Footer -->
@@ -202,22 +148,7 @@
           >
             Close
           </button>
-          <div class="flex gap-3">
-            <button
-              v-if="!isInLearningPath"
-              @click="addToPath"
-              class="px-6 py-2.5 font-medium text-white bg-indigo-600 rounded-lg transition-colors hover:bg-indigo-700"
-            >
-              Add to Learning Path
-            </button>
-            <button
-              v-else-if="showProgressControls"
-              @click="removeFromPath"
-              class="px-6 py-2.5 font-medium text-white bg-red-600 rounded-lg transition-colors hover:bg-red-700"
-            >
-              Remove from Learning Path
-            </button>
-          </div>
+       
         </div>
       </div>
     </div>
