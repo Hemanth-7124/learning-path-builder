@@ -17,7 +17,7 @@
       </div>
 
       <!-- Stats -->
-      <div class="flex justify-between items-center">
+      <div class="flex gap-2 justify-between items-center">
         <div class="flex gap-6 items-center">
           <div class="flex gap-2 items-center px-3 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
             <BookOpenIcon class="w-5 h-5 text-indigo-600" />
@@ -27,17 +27,25 @@
             <ClockIcon class="w-5 h-5 text-green-600" />
             <span class="text-sm font-medium text-gray-900">{{ formatDuration(totalDuration) }}</span>
           </div>
+          <div v-if="getCompletedModulesCount() > 0" class="flex gap-2 items-center px-3 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <CheckCircleIcon class="w-5 h-5 text-green-600" />
+            <span class="text-sm font-medium text-gray-900">{{ getCompletedModulesCount() }} completed</span>
+          </div>
         </div>
 
         <!-- Progress indicator -->
-        <!-- <div v-if="moduleCount > 0" class="hidden sm:block">
-          <div class="overflow-hidden w-32 h-2 bg-gray-200 rounded-full">
-            <div
-              class="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
-              :style="{ width: `${Math.min((moduleCount / 10) * 100, 100)}%` }"
-            />
+        <div v-if="moduleCount > 0" class="hidden sm:block">
+          <div class="flex gap-1 items-center">
+            <span class="text-xs text-gray-600">Overall Progress</span>
+            <div class="overflow-hidden w-32 h-2 bg-gray-200 rounded-full">
+              <div
+                class="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-500"
+                :style="{ width: `${getOverallProgress()}%` }"
+              />
+            </div>
+            <span class="text-xs font-medium text-gray-900">{{ getOverallProgress() }}%</span>
           </div>
-        </div> -->
+        </div>
       </div>
     </div>
 
@@ -142,9 +150,13 @@
                 :show-add-button="false"
                 draggable
                 :index="index"
+                :show-progress="true"
+                :enable-preview="true"
                 @remove="removeFromPath"
                 @dragstart="handleModuleDragStart($event, index)"
                 @dragend="handleModuleDragEnd"
+                @update-status="updateModuleStatus"
+                @preview="handleModulePreview"
                 custom-class="rounded-2xl border-2 border-gray-200 backdrop-blur-sm transition-all duration-300 hover:border-indigo-400 hover:shadow-2xl bg-white/95 group-hover:bg-white"
               />
             </div>
@@ -211,6 +223,18 @@
       @close="showExportModal = false"
       @error="handleExportError"
     />
+
+    <!-- Module Preview Modal -->
+    <ModulePreview
+      v-if="showPreviewModal && previewModule"
+      :module="previewModule"
+      :show-progress-controls="true"
+      :is-in-learning-path="isInLearningPath(previewModule.id)"
+      @close="showPreviewModal = false"
+      @add-to-path="addToLearningPath"
+      @remove-from-path="removeFromLearningPath"
+      @update-status="updateModuleStatus"
+    />
   </div>
 </template>
 
@@ -220,11 +244,13 @@ import type { Module } from '../types'
 import {
   BookOpenIcon,
   ClockIcon,
-  AcademicCapIcon
+  AcademicCapIcon,
+  CheckCircleIcon
 } from '@heroicons/vue/24/outline'
 
 // Import ExportModal component
 import ExportModal from './ExportModal.vue'
+import ModulePreview from './ModulePreview.vue'
 
 const {
   learningPath,
@@ -233,7 +259,10 @@ const {
   removeFromLearningPath,
   clearLearningPath,
   formatDuration,
-  reorderModules
+  reorderModules,
+  updateModuleStatus,
+  getCompletedModulesCount,
+  getOverallProgress
 } = useLearningPath()
 
 const isDragOver = ref(false)
@@ -242,6 +271,10 @@ const draggedOverModuleIndex = ref<number | null>(null)
 
 // Export modal state
 const showExportModal = ref(false)
+
+// Preview modal state
+const showPreviewModal = ref(false)
+const previewModule = ref<Module | null>(null)
 
 const handleDragOver = (event: DragEvent) => {
   event.preventDefault()
@@ -346,6 +379,11 @@ const exportAsJSON = () => {
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+}
+
+const handleModulePreview = (module: Module) => {
+  previewModule.value = module
+  showPreviewModal.value = true
 }
 
 const handleExportError = (message: string) => {

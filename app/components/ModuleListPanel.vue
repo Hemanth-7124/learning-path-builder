@@ -84,11 +84,23 @@
           :module="module"
           :is-in-path="isInPath(module.id)"
           :show-delete-button="isCustomModule(module.id)"
+          :enable-preview="true"
           @add="addToPath"
           @delete="deleteCustomModule"
+          @preview="handleModulePreview"
         />
       </div>
     </div>
+  <!-- Module Preview Modal -->
+    <ModulePreview
+      v-if="showPreviewModal && previewModule"
+      :module="previewModule"
+      :show-progress-controls="false"
+      :is-in-learning-path="isInPath(previewModule.id)"
+      @close="showPreviewModal = false"
+      @add-to-path="addToPath"
+      @remove-from-path="removeFromLearningPath"
+    />
   </div>
 </template>
 
@@ -96,6 +108,7 @@
 import type { Module } from '~/types'
 import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/vue/24/outline'
 import { CATEGORIES, DIFFICULTY_LEVELS } from '~/types'
+import ModulePreview from './ModulePreview.vue'
 
 const emit = defineEmits<{
   'create-module': []
@@ -108,6 +121,10 @@ const {
   removeCustomModule,
   isCustomModule
 } = useLearningPath()
+
+// Preview modal state
+const showPreviewModal = ref(false)
+const previewModule = ref<Module | null>(null)
 
 const searchQuery = ref('')
 const selectedCategory = ref('')
@@ -165,6 +182,11 @@ const clearFilters = () => {
   searchQuery.value = ''
   selectedCategory.value = ''
   selectedDifficulty.value = ''
+}
+
+const handleModulePreview = (module: Module) => {
+  previewModule.value = module
+  showPreviewModal.value = true
 }
 </script>
 

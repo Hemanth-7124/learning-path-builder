@@ -1,4 +1,4 @@
-import type { Module, LearningPath } from '~/types'
+import type { Module, LearningPath, ModuleStatus } from '~/types'
 
 const LEARNING_PATH_KEY = 'learning-path'
 const CUSTOM_MODULES_KEY = 'custom-modules'
@@ -13,7 +13,26 @@ export const useLearningPath = () => {
       duration: 120,
       category: 'Web Development',
       difficulty: 'Beginner',
-      icon: '🌐'
+      icon: '🌐',
+      status: 'not-started',
+      progress: 0,
+      prerequisites: [],
+      learningObjectives: [
+        'Understand HTML document structure',
+        'Master common HTML tags and attributes',
+        'Learn semantic HTML best practices',
+        'Create accessible web content'
+      ],
+      topics: ['HTML Elements', 'Attributes', 'Semantic Markup', 'Accessibility', 'Forms'],
+      resources: [
+        {
+          id: 'mdn-html',
+          title: 'MDN HTML Documentation',
+          type: 'documentation',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/HTML',
+          description: 'Comprehensive HTML reference guide'
+        }
+      ]
     },
     {
       id: 'css-basics',
@@ -22,7 +41,27 @@ export const useLearningPath = () => {
       duration: 180,
       category: 'Web Development',
       difficulty: 'Beginner',
-      icon: '🎨'
+      icon: '🎨',
+      status: 'not-started',
+      progress: 0,
+      prerequisites: ['HTML Fundamentals'],
+      learningObjectives: [
+        'Understand CSS syntax and selectors',
+        'Master the box model and positioning',
+        'Learn Flexbox and CSS Grid layouts',
+        'Create responsive designs with media queries',
+        'Apply modern CSS features and best practices'
+      ],
+      topics: ['CSS Selectors', 'Box Model', 'Flexbox', 'CSS Grid', 'Responsive Design', 'Transitions', 'Animations'],
+      resources: [
+        {
+          id: 'mdn-css',
+          title: 'MDN CSS Documentation',
+          type: 'documentation',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/CSS',
+          description: 'Comprehensive CSS reference guide'
+        }
+      ]
     },
     {
       id: 'javascript-basics',
@@ -31,7 +70,34 @@ export const useLearningPath = () => {
       duration: 240,
       category: 'Web Development',
       difficulty: 'Beginner',
-      icon: '⚡'
+      icon: '⚡',
+      status: 'not-started',
+      progress: 0,
+      prerequisites: ['HTML Fundamentals', 'CSS Essentials'],
+      learningObjectives: [
+        'Understand JavaScript syntax and data types',
+        'Master functions, scope, and closures',
+        'Learn DOM manipulation and event handling',
+        'Implement asynchronous programming with promises',
+        'Apply modern ES6+ features and best practices'
+      ],
+      topics: ['Variables & Data Types', 'Functions', 'DOM Manipulation', 'Events', 'Async Programming', 'ES6+', 'Error Handling'],
+      resources: [
+        {
+          id: 'mdn-js',
+          title: 'MDN JavaScript Guide',
+          type: 'documentation',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide',
+          description: 'Complete JavaScript learning guide'
+        },
+        {
+          id: 'javascript-info',
+          title: 'Modern JavaScript Tutorial',
+          type: 'course',
+          url: 'https://javascript.info/',
+          description: 'Comprehensive JavaScript tutorial'
+        }
+      ]
     },
     {
       id: 'react-basics',
@@ -144,7 +210,13 @@ export const useLearningPath = () => {
   const addToLearningPath = (module: Module) => {
     // Check if module is already in the learning path
     if (!learningPath.value.modules.find(m => m.id === module.id)) {
-      learningPath.value.modules.push(module)
+      // Add module with default progress tracking values
+      const moduleToAdd = {
+        ...module,
+        status: module.status || 'not-started',
+        progress: module.progress || 0
+      }
+      learningPath.value.modules.push(moduleToAdd)
       learningPath.value.totalDuration = calculateTotalDuration(learningPath.value.modules)
       learningPath.value.lastUpdated = new Date()
       saveToLocalStorage()
@@ -191,7 +263,14 @@ export const useLearningPath = () => {
           const data = JSON.parse(savedPath)
           learningPath.value = {
             ...data,
-            lastUpdated: new Date(data.lastUpdated)
+            lastUpdated: new Date(data.lastUpdated),
+            lastProgressUpdate: data.lastProgressUpdate ? new Date(data.lastProgressUpdate) : undefined,
+            // Ensure modules have progress tracking fields
+            modules: data.modules?.map((module: any) => ({
+              ...module,
+              status: module.status || 'not-started',
+              progress: module.progress || 0
+            })) || []
           }
         } catch (error) {
           console.error('Error loading learning path from localStorage:', error)
@@ -312,6 +391,76 @@ export const useLearningPath = () => {
     return customModules.value.some(m => m.id === moduleId)
   }
 
+  // Progress Tracking Methods
+  const updateModuleStatus = (moduleId: string, status: ModuleStatus): void => {
+    const module = learningPath.value.modules.find(m => m.id === moduleId)
+    if (module) {
+      module.status = status
+      if (status === 'completed') {
+        module.progress = 100
+        if (!learningPath.value.completedModules) {
+          learningPath.value.completedModules = []
+        }
+        if (!learningPath.value.completedModules.includes(moduleId)) {
+          learningPath.value.completedModules.push(moduleId)
+        }
+      } else if (status === 'not-started') {
+        module.progress = 0
+        if (learningPath.value.completedModules) {
+          learningPath.value.completedModules = learningPath.value.completedModules.filter(id => id !== moduleId)
+        }
+      }
+      learningPath.value.lastProgressUpdate = new Date()
+      learningPath.value.lastUpdated = new Date()
+      saveToLocalStorage()
+    }
+  }
+
+  const updateModuleProgress = (moduleId: string, progress: number): void => {
+    const module = learningPath.value.modules.find(m => m.id === moduleId)
+    if (module) {
+      module.progress = Math.max(0, Math.min(100, progress))
+      if (module.progress === 100 && module.status !== 'completed') {
+        updateModuleStatus(moduleId, 'completed')
+      } else if (module.progress > 0 && module.status === 'not-started') {
+        module.status = 'in-progress'
+      } else if (module.progress === 0 && module.status === 'in-progress') {
+        module.status = 'not-started'
+      }
+      learningPath.value.lastProgressUpdate = new Date()
+      learningPath.value.lastUpdated = new Date()
+      saveToLocalStorage()
+    }
+  }
+
+  const getModuleStatus = (moduleId: string): ModuleStatus => {
+    const module = learningPath.value.modules.find(m => m.id === moduleId)
+    return module?.status || 'not-started'
+  }
+
+  const getModuleProgress = (moduleId: string): number => {
+    const module = learningPath.value.modules.find(m => m.id === moduleId)
+    return module?.progress || 0
+  }
+
+  const getCompletedModulesCount = (): number => {
+    return learningPath.value.modules.filter(m => m.status === 'completed').length
+  }
+
+  const getOverallProgress = (): number => {
+    if (learningPath.value.modules.length === 0) return 0
+    const completedCount = getCompletedModulesCount()
+    return Math.round((completedCount / learningPath.value.modules.length) * 100)
+  }
+
+  const isInProgress = (moduleId: string): boolean => {
+    return getModuleStatus(moduleId) === 'in-progress'
+  }
+
+  const isCompleted = (moduleId: string): boolean => {
+    return getModuleStatus(moduleId) === 'completed'
+  }
+
   // Load from localStorage on initialization
   onMounted(() => {
     loadFromLocalStorage()
@@ -342,6 +491,16 @@ export const useLearningPath = () => {
     removeCustomModule,
     isCustomModule,
     validateModule,
-    getDefaultIcon
+    getDefaultIcon,
+
+    // Progress Tracking Methods
+    updateModuleStatus,
+    updateModuleProgress,
+    getModuleStatus,
+    getModuleProgress,
+    getCompletedModulesCount,
+    getOverallProgress,
+    isInProgress,
+    isCompleted
   }
 }
