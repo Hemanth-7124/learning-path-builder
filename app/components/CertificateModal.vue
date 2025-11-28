@@ -28,29 +28,29 @@
       <!-- Content -->
       <div class="p-6 space-y-6">
         <!-- Certificate Preview -->
-        <div class="border-2 border-gray-200 rounded-lg overflow-hidden">
+        <div class="overflow-hidden rounded-lg border-2 border-gray-200">
           <div
             id="certificate-preview"
-            class="relative bg-gradient-to-br from-indigo-50 to-purple-50 p-8 text-center"
+            class="relative p-8 text-center bg-gradient-to-br from-indigo-50 to-purple-50"
             style="min-height: 600px;"
           >
             <!-- Certificate Border -->
-            <div class="absolute inset-4 border-4 border-double border-indigo-200 rounded-lg"></div>
+            <div class="absolute inset-4 rounded-lg border-4 border-indigo-200 border-double"></div>
 
             <!-- Certificate Content -->
-            <div class="relative z-10 flex flex-col justify-center items-center h-full p-8">
+            <div class="flex relative z-10 flex-col justify-center items-center p-8 h-full">
               <!-- Header -->
               <div class="mb-8">
-                <TrophyIcon class="w-16 h-16 mx-auto text-yellow-500 mb-4" />
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">Certificate of Completion</h1>
-                <div class="w-32 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 mx-auto"></div>
+                <TrophyIcon class="mx-auto mb-4 w-16 h-16 text-yellow-500" />
+                <h1 class="mb-2 text-3xl font-bold text-gray-800">Certificate of Completion</h1>
+                <div class="mx-auto w-32 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
               </div>
 
               <!-- Recipient Name -->
               <div class="mb-8">
-                <p class="text-lg text-gray-600 mb-2">This is to certify that</p>
+                <p class="mb-2 text-lg text-gray-600">This is to certify that</p>
                 <div v-if="!isEditingName" class="cursor-pointer" @click="startEditingName">
-                  <h2 class="text-3xl font-bold text-indigo-600 border-b-2 border-dashed border-indigo-300 pb-1">
+                  <h2 class="pb-1 text-3xl font-bold text-indigo-600 border-b-2 border-indigo-300 border-dashed">
                     {{ learnerName || 'Your Name' }}
                   </h2>
                 </div>
@@ -59,13 +59,13 @@
                   ref="nameInput"
                   v-model="tempLearnerName"
                   type="text"
-                  class="text-3xl font-bold text-center text-indigo-600 border-2 border-indigo-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  class="px-4 py-2 text-3xl font-bold text-center text-indigo-600 rounded border-2 border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Enter your name"
                   @blur="finishEditingName"
                   @keydown.enter="finishEditingName"
                   @keydown.escape="cancelEditingName"
                 >
-                <p class="text-sm text-gray-500 mt-2">
+                <p class="mt-2 text-sm text-gray-700">
                   <template v-if="!isEditingName">Click name to edit</template>
                   <template v-else>Press Enter to save or Escape to cancel</template>
                 </p>
@@ -73,15 +73,15 @@
 
               <!-- Achievement Description -->
               <div class="mb-8 max-w-2xl">
-                <p class="text-gray-700 leading-relaxed">
+                <p class="leading-relaxed text-gray-700">
                   has successfully completed the module
                 </p>
-                <h3 class="text-2xl font-bold text-gray-800 mt-2">{{ module.title }}</h3>
-                <p class="text-gray-600 mt-1">{{ module.category }} • {{ module.difficulty }}</p>
+                <h3 class="mt-2 text-2xl font-bold text-gray-800">{{ module.title }}</h3>
+                <p class="mt-1 text-gray-600">{{ module.category }} • {{ module.difficulty }}</p>
               </div>
 
               <!-- Details -->
-              <div class="grid grid-cols-2 gap-8 mb-8 text-left max-w-md mx-auto">
+              <div class="grid grid-cols-2 gap-8 mx-auto mb-8 max-w-md text-left">
                 <div>
                   <p class="text-sm text-gray-600">Duration</p>
                   <p class="font-semibold text-gray-800">{{ formatDuration(module.duration) }}</p>
@@ -101,14 +101,14 @@
               </div>
 
               <!-- Signature Lines -->
-              <div class="grid grid-cols-2 gap-8 mt-12 max-w-md mx-auto">
+              <div class="grid grid-cols-2 gap-8 mx-auto mt-12 max-w-md">
                 <div class="text-center">
-                  <div class="border-b-2 border-gray-400 mb-2"></div>
+                  <div class="mb-2 border-b-2 border-gray-400"></div>
                   <p class="text-sm text-gray-600">Learning Path Builder</p>
                   <p class="text-xs text-gray-500">Platform</p>
                 </div>
                 <div class="text-center">
-                  <div class="border-b-2 border-gray-400 mb-2"></div>
+                  <div class="mb-2 border-b-2 border-gray-400"></div>
                   <p class="text-sm text-gray-600">{{ learnerName || 'Recipient' }}</p>
                   <p class="text-xs text-gray-500">Learner</p>
                 </div>
@@ -123,21 +123,21 @@
         </div>
 
         <!-- Actions -->
-        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <div class="flex flex-col gap-4 justify-center items-center sm:flex-row">
           <button
             @click="handleDownloadPDF"
             :disabled="!learnerName || isGeneratingPDF"
-            class="flex justify-center items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="flex gap-2 justify-center items-center px-6 py-3 font-medium text-white bg-indigo-600 rounded-lg transition-colors hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ArrowDownTrayIcon v-if="!isGeneratingPDF" class="w-5 h-5" />
-            <div v-else class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div v-else class="w-5 h-5 rounded-full border-2 border-white animate-spin border-t-transparent"></div>
             {{ isGeneratingPDF ? 'Generating...' : 'Download PDF' }}
           </button>
 
           <button
             @click="handlePrint"
             :disabled="!learnerName"
-            class="flex justify-center items-center gap-2 px-6 py-3 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="flex gap-2 justify-center items-center px-6 py-3 font-medium text-white bg-gray-600 rounded-lg transition-colors hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <PrinterIcon class="w-5 h-5" />
             Print Certificate
@@ -146,7 +146,7 @@
           <button
             @click="handleShare"
             :disabled="!learnerName"
-            class="flex justify-center items-center gap-2 px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="flex gap-2 justify-center items-center px-6 py-3 font-medium text-white bg-purple-600 rounded-lg transition-colors hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShareIcon class="w-5 h-5" />
             Share
@@ -154,12 +154,12 @@
         </div>
 
         <!-- Instructions -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
           <div class="flex gap-3">
-            <InformationCircleIcon class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <InformationCircleIcon class="flex-shrink-0 mt-0.5 w-5 h-5 text-blue-600" />
             <div class="text-sm">
-              <h4 class="font-semibold text-blue-900 mb-1">Certificate Instructions</h4>
-              <ul class="text-blue-800 space-y-1">
+              <h4 class="mb-1 font-semibold text-blue-900">Certificate Instructions</h4>
+              <ul class="space-y-1 text-blue-800">
                 <li>• Click on the name field to personalize your certificate</li>
                 <li>• Enter your name and press Enter to save it</li>
                 <li>• Download, Print, or Share your certificate</li>

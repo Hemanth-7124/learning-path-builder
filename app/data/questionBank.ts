@@ -1,9 +1,9 @@
 import type { Question } from '~/types'
 
 export const questionBank: Question[] = [
-  // Web Development - Beginner
+  // Web Development - General Questions (can be used by any Web Development module)
   {
-    id: 'web-beg-001',
+    id: 'web-general-001',
     text: 'What does HTML stand for?',
     category: 'Web Development',
     difficulty: 'Beginner',
@@ -17,7 +17,7 @@ export const questionBank: Question[] = [
     explanation: 'HTML stands for Hyper Text Markup Language and is the standard markup language for creating web pages.'
   },
   {
-    id: 'web-beg-002',
+    id: 'web-general-002',
     text: 'Which CSS property is used to change the background color of an element?',
     category: 'Web Development',
     difficulty: 'Beginner',
@@ -722,20 +722,375 @@ export const questionBank: Question[] = [
     ],
     correctAnswer: 2,
     explanation: 'Python is a high-level programming language that is widely used in data science due to its simplicity and extensive libraries for data analysis and machine learning.'
+  },
+
+  // Module-Specific Questions
+
+  // HTML Fundamentals (html-basics)
+  {
+    id: 'html-basics-001',
+    text: 'What is the purpose of the <head> element in an HTML document?',
+    category: 'Web Development',
+    difficulty: 'Beginner',
+    moduleIds: ['html-basics'],
+    options: [
+      'To display content at the top of the page',
+      'To contain metadata about the document',
+      'To create heading styles',
+      'To define the document header section'
+    ],
+    correctAnswer: 1,
+    explanation: 'The <head> element contains metadata about the document, such as the title, character set, styles, and scripts.'
+  },
+  {
+    id: 'html-basics-002',
+    text: 'Which HTML element is used to create an unordered list?',
+    category: 'Web Development',
+    difficulty: 'Beginner',
+    moduleIds: ['html-basics'],
+    options: [
+      '<ol>',
+      '<list>',
+      '<ul>',
+      '<li>'
+    ],
+    correctAnswer: 2,
+    explanation: 'The <ul> (unordered list) element is used to create bulleted lists in HTML.'
+  },
+  {
+    id: 'html-basics-003',
+    text: 'What is semantic HTML?',
+    category: 'Web Development',
+    difficulty: 'Beginner',
+    moduleIds: ['html-basics'],
+    options: [
+      'HTML that validates without errors',
+      'HTML that describes its meaning to both the browser and developer',
+      'HTML that uses only basic tags',
+      'HTML that loads quickly'
+    ],
+    correctAnswer: 1,
+    explanation: 'Semantic HTML uses HTML elements according to their intended purpose, describing the meaning of content.'
+  },
+
+  // CSS Essentials (css-basics)
+  {
+    id: 'css-basics-001',
+    text: 'What is the CSS box model?',
+    category: 'Web Development',
+    difficulty: 'Beginner',
+    moduleIds: ['css-basics'],
+    options: [
+      'A way to organize CSS files',
+      'A model that describes how every HTML element is rendered as a rectangular box',
+      'A CSS framework',
+      'A layout technique for responsive design'
+    ],
+    correctAnswer: 1,
+    explanation: 'The CSS box model describes how every HTML element is rendered as a rectangular box consisting of content, padding, border, and margin.'
+  },
+  {
+    id: 'css-basics-002',
+    text: 'Which CSS selector has the highest specificity?',
+    category: 'Web Development',
+    difficulty: 'Beginner',
+    moduleIds: ['css-basics'],
+    options: [
+      '.class',
+      '#id',
+      'element',
+      'attribute'
+    ],
+    correctAnswer: 1,
+    explanation: 'ID selectors (#id) have the highest specificity among common CSS selectors, followed by class selectors, then element selectors.'
+  },
+  {
+    id: 'css-basics-003',
+    text: 'What is the difference between margin and padding in CSS?',
+    category: 'Web Development',
+    difficulty: 'Beginner',
+    moduleIds: ['css-basics'],
+    options: [
+      'Margin creates space inside an element, padding creates space outside',
+      'Padding creates space inside an element, margin creates space outside',
+      'They are the same thing',
+      'Margin affects text, padding affects borders'
+    ],
+    correctAnswer: 1,
+    explanation: 'Padding creates space inside an element\'s border, while margin creates space outside an element\'s border.'
+  },
+
+  // JavaScript Fundamentals (javascript-basics)
+  {
+    id: 'javascript-basics-001',
+    text: 'What is a JavaScript function?',
+    category: 'Web Development',
+    difficulty: 'Beginner',
+    moduleIds: ['javascript-basics'],
+    options: [
+      'A type of variable',
+      'A reusable block of code that performs a specific task',
+      'A loop structure',
+      'A CSS selector'
+    ],
+    correctAnswer: 1,
+    explanation: 'A JavaScript function is a reusable block of code that performs a specific task and can be called multiple times.'
+  },
+  {
+    id: 'javascript-basics-002',
+    text: 'How do you declare a constant variable in JavaScript?',
+    category: 'Web Development',
+    difficulty: 'Beginner',
+    moduleIds: ['javascript-basics'],
+    options: [
+      'var',
+      'let',
+      'const',
+      'constant'
+    ],
+    correctAnswer: 2,
+    explanation: 'The const keyword is used to declare variables that cannot be reassigned in JavaScript.'
+  },
+  {
+    id: 'javascript-basics-003',
+    text: 'What is the DOM in JavaScript?',
+    category: 'Web Development',
+    difficulty: 'Beginner',
+    moduleIds: ['javascript-basics'],
+    options: [
+      'A JavaScript framework',
+      'A database system',
+      'The Document Object Model representing HTML elements',
+      'A CSS library'
+    ],
+    correctAnswer: 2,
+    explanation: 'The DOM (Document Object Model) is a programming interface that represents HTML documents as a tree structure of objects.'
+  },
+
+  // React Fundamentals (react-basics)
+  {
+    id: 'react-basics-001',
+    text: 'What is a React component?',
+    category: 'Web Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['react-basics'],
+    options: [
+      'A CSS file',
+      'A database table',
+      'A reusable piece of UI that returns JSX',
+      'A JavaScript variable'
+    ],
+    correctAnswer: 2,
+    explanation: 'A React component is a reusable piece of UI that returns JSX (JavaScript XML) and can have its own state and logic.'
+  },
+  {
+    id: 'react-basics-002',
+    text: 'What is JSX in React?',
+    category: 'Web Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['react-basics'],
+    options: [
+      'A styling language',
+      'JavaScript XML - a syntax extension for JavaScript',
+      'A database query language',
+      'A CSS preprocessor'
+    ],
+    correctAnswer: 1,
+    explanation: 'JSX is a syntax extension for JavaScript that allows you to write HTML-like code in JavaScript files.'
+  },
+  {
+    id: 'react-basics-003',
+    text: 'What is the purpose of React hooks?',
+    category: 'Web Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['react-basics'],
+    options: [
+      'To catch errors in components',
+      'To allow functional components to use state and lifecycle features',
+      'To style React components',
+      'To connect to databases'
+    ],
+    correctAnswer: 1,
+    explanation: 'React hooks allow functional components to use state and other React features that were previously only available in class components.'
+  },
+
+  // Node.js Fundamentals (nodejs-basics)
+  {
+    id: 'nodejs-basics-001',
+    text: 'What is Node.js?',
+    category: 'Backend Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['nodejs-basics'],
+    options: [
+      'A front-end framework',
+      'A JavaScript runtime built on Chrome\'s V8 JavaScript engine',
+      'A database system',
+      'A CSS library'
+    ],
+    correctAnswer: 1,
+    explanation: 'Node.js is a JavaScript runtime built on Chrome\'s V8 JavaScript engine that allows JavaScript to run on the server side.'
+  },
+  {
+    id: 'nodejs-basics-002',
+    text: 'What is npm in Node.js?',
+    category: 'Backend Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['nodejs-basics'],
+    options: [
+      'A server framework',
+      'A package manager for Node.js',
+      'A database',
+      'A testing tool'
+    ],
+    correctAnswer: 1,
+    explanation: 'npm (Node Package Manager) is the default package manager for Node.js that allows you to install and manage third-party packages.'
+  },
+  {
+    id: 'nodejs-basics-003',
+    text: 'What is Express.js?',
+    category: 'Backend Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['nodejs-basics'],
+    options: [
+      'A front-end library',
+      'A minimal and flexible Node.js web application framework',
+      'A database ORM',
+      'A CSS framework'
+    ],
+    correctAnswer: 1,
+    explanation: 'Express.js is a minimal and flexible Node.js web application framework that provides a robust set of features for web and mobile applications.'
+  },
+
+  // Git Version Control (git-basics)
+  {
+    id: 'git-basics-001',
+    text: 'What does the git commit command do?',
+    category: 'DevOps',
+    difficulty: 'Beginner',
+    moduleIds: ['git-basics'],
+    options: [
+      'Saves changes to the remote repository',
+      'Records changes to the local repository',
+      'Creates a new branch',
+      'Merges branches'
+    ],
+    correctAnswer: 1,
+    explanation: 'git commit records changes to the local repository with a descriptive message.'
+  },
+  {
+    id: 'git-basics-002',
+    text: 'What is the difference between git pull and git fetch?',
+    category: 'DevOps',
+    difficulty: 'Beginner',
+    moduleIds: ['git-basics'],
+    options: [
+      'git fetch downloads changes, git pull downloads and merges them',
+      'git pull downloads changes, git fetch downloads and merges them',
+      'They are the same',
+      'git fetch is for pushing, git pull is for pulling'
+    ],
+    correctAnswer: 1,
+    explanation: 'git fetch downloads changes from the remote but doesn\'t merge them, while git pull downloads and automatically merges changes into your current branch.'
+  },
+  {
+    id: 'git-basics-003',
+    text: 'What is a branch in Git?',
+    category: 'DevOps',
+    difficulty: 'Beginner',
+    moduleIds: ['git-basics'],
+    options: [
+      'A separate repository',
+      'A way to delete commits',
+      'An independent line of development',
+      'A backup of the main code'
+    ],
+    correctAnswer: 2,
+    explanation: 'A Git branch is an independent line of development that allows you to work on features without affecting the main codebase.'
+  },
+
+  // Python Programming (python-basics)
+  {
+    id: 'python-basics-001',
+    text: 'What is a Python list comprehension?',
+    category: 'Data Science',
+    difficulty: 'Beginner',
+    moduleIds: ['python-basics'],
+    options: [
+      'A way to document Python code',
+      'A concise way to create lists based on existing lists',
+      'A debugging technique',
+      'A type of error handling'
+    ],
+    correctAnswer: 1,
+    explanation: 'Python list comprehensions provide a concise way to create lists based on existing lists or other iterables.'
+  },
+  {
+    id: 'python-basics-002',
+    text: 'How do you define a function in Python?',
+    category: 'Data Science',
+    difficulty: 'Beginner',
+    moduleIds: ['python-basics'],
+    options: [
+      'function myFunc()',
+      'def myFunc():',
+      'create myFunc()',
+      'define myFunc():'
+    ],
+    correctAnswer: 1,
+    explanation: 'In Python, functions are defined using the def keyword followed by the function name and parentheses.'
+  },
+  {
+    id: 'python-basics-003',
+    text: 'What is a Python dictionary?',
+    category: 'Data Science',
+    difficulty: 'Beginner',
+    moduleIds: ['python-basics'],
+    options: [
+      'A book of Python terms',
+      'A collection of key-value pairs',
+      'A sorted list',
+      'A type of loop'
+    ],
+    correctAnswer: 1,
+    explanation: 'A Python dictionary is an unordered collection of key-value pairs that allows efficient lookup of values using keys.'
   }
 ]
 
-// Helper function to get questions by category and difficulty
-export function getQuestionsByCategory(category: string, difficulty: 'Beginner' | 'Intermediate' | 'Advanced'): Question[] {
-  return questionBank.filter(question =>
-    question.category === category &&
-    question.difficulty === difficulty
-  )
+// Helper function to get questions by category, difficulty, and optionally module
+export function getQuestionsByCategory(category: string, difficulty: 'Beginner' | 'Intermediate' | 'Advanced', moduleId?: string): Question[] {
+  console.log(`=== Filtering Questions ===`)
+  console.log(`Category: ${category}`)
+  console.log(`Difficulty: ${difficulty}`)
+  console.log(`Module ID: ${moduleId || 'None'}`)
+
+  return questionBank.filter(question => {
+    // Filter by category and difficulty
+    const categoryMatch = question.category === category
+    const difficultyMatch = question.difficulty === difficulty
+
+    // If moduleId is provided, check if question is specifically for this module or is general (no moduleIds specified)
+    let moduleMatch = true
+    if (moduleId) {
+      // If question has specific moduleIds, it must include this module
+      if (question.moduleIds && question.moduleIds.length > 0) {
+        moduleMatch = question.moduleIds.includes(moduleId)
+      }
+      // If question has no moduleIds, it's a general question that can be used by any module
+      // so moduleMatch remains true
+    }
+
+    const matches = categoryMatch && difficultyMatch && moduleMatch
+    if (matches && (moduleId || categoryMatch)) {
+      console.log(`✓ Matched: ${question.id} - ${question.text.substring(0, 50)}... (Module IDs: ${question.moduleIds ? question.moduleIds.join(', ') : 'General'})`)
+    }
+
+    return matches
+  })
 }
 
 // Helper function to get random questions
-export function getRandomQuestions(category: string, difficulty: 'Beginner' | 'Intermediate' | 'Advanced', count: number): Question[] {
-  const questions = getQuestionsByCategory(category, difficulty)
+export function getRandomQuestions(category: string, difficulty: 'Beginner' | 'Intermediate' | 'Advanced', count: number, moduleId?: string): Question[] {
+  const questions = getQuestionsByCategory(category, difficulty, moduleId)
   const shuffled = [...questions].sort(() => 0.5 - Math.random())
   return shuffled.slice(0, Math.min(count, questions.length))
 }
@@ -754,4 +1109,23 @@ export function calculateScore(questions: Question[], userAnswers: number[]): nu
     }
   })
   return Math.round((correct / questions.length) * 100)
+}
+
+// Debug function to test filtering
+export function debugQuestionFiltering(category: string, difficulty: 'Beginner' | 'Intermediate' | 'Advanced', moduleId: string): void {
+  console.log('=== Debug Question Filtering ===')
+  console.log('Category:', category)
+  console.log('Difficulty:', difficulty)
+  console.log('Module ID:', moduleId)
+
+  const allQuestions = getQuestionsByCategory(category, difficulty, moduleId)
+  console.log('Total questions found:', allQuestions.length)
+
+  allQuestions.forEach((question, index) => {
+    console.log(`${index + 1}. ${question.text}`)
+    console.log(`   ID: ${question.id}`)
+    console.log(`   Module IDs: ${question.moduleIds ? question.moduleIds.join(', ') : 'General (no specific module)'}`)
+    console.log('')
+  })
+  console.log('=== End Debug ===')
 }

@@ -78,6 +78,7 @@ export interface Question {
   text: string
   category: string
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
+  moduleIds?: string[] // Optional: specific module IDs that can use this question
   options: string[]
   correctAnswer: number
   explanation?: string

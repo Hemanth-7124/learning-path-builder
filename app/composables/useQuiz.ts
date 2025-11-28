@@ -102,10 +102,13 @@ export const useQuiz = () => {
       const questions = getRandomQuestions(
         module.category,
         module.difficulty,
-        QUIZ_CONFIG.QUESTIONS_PER_QUIZ
+        QUIZ_CONFIG.QUESTIONS_PER_QUIZ,
+        module.id
       )
 
       console.log('Questions retrieved:', questions.length)
+      console.log('Module ID:', module.id)
+      console.log('Questions found:', questions.map(q => ({ id: q.id, text: q.text, moduleIds: q.moduleIds })))
 
       if (questions.length === 0) {
         console.error(`No questions available for ${module.category} - ${module.difficulty}`)
