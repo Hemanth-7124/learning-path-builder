@@ -107,6 +107,7 @@
 
 <script setup lang="ts">
 import type { Module } from '~/types'
+import { getDifficultyClass } from '~/utils/formatting'
 import {
   ClockIcon,
   TrashIcon,
@@ -158,15 +159,6 @@ const emit = defineEmits<{
 }>()
 
 const { formatDuration } = useLearningPath()
-
-const getDifficultyClass = (difficulty: string) => {
-  const classes = {
-    'Beginner': 'bg-green-100 text-green-800',
-    'Intermediate': 'bg-yellow-100 text-yellow-800',
-    'Advanced': 'bg-red-100 text-red-800'
-  }
-  return classes[difficulty as keyof typeof classes] || 'bg-gray-100 text-gray-800'
-}
 
 const handleDragStart = (event: DragEvent) => {
   if (!props.draggable || (props.isInPath && !props.allowDuplicate)) {

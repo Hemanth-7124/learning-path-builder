@@ -1,4 +1,5 @@
 import type { Module, QuizAttempt, Certificate } from '~/types'
+import { formatDuration } from '~/utils/formatting'
 
 export const useCertificate = () => {
   // PDF generation state
@@ -256,16 +257,7 @@ export const useCertificate = () => {
     return certIdPattern.test(certificateId)
   }
 
-  // Format duration helper
-  const formatDuration = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    if (hours > 0) {
-      return `${hours}h ${mins}m`
-    }
-    return `${mins} minutes`
-  }
-
+  
   // Helper function to add professional watermarks
   const addWatermark = (doc: any, text: string, x: number, y: number) => {
     doc.setFontSize(8)

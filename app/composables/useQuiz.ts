@@ -94,19 +94,12 @@ export const useQuiz = () => {
   // Start a new quiz
   const startQuiz = (module: Module): QuizAttempt | null => {
     try {
-      console.log('=== useQuiz startQuiz ===')
-      console.log('Module:', module.title)
-      console.log('Category:', module.category)
-      console.log('Difficulty:', module.difficulty)
-
       const questions = getRandomQuestions(
         module.category,
         module.difficulty,
         QUIZ_CONFIG.QUESTIONS_PER_QUIZ,
         module.id
       )
-
-      console.log('Questions retrieved:', questions.length)
 
       if (questions.length === 0) {
         // Show user-friendly alert instead of console error
@@ -132,14 +125,10 @@ Please try another module or contact an administrator to add questions for this 
 
       // Initialize quiz state
       currentQuiz.value = newAttempt
-      console.log('Set currentQuiz.value to:', currentQuiz.value)
-
       currentQuestionIndex.value = 0
       userAnswers.value = new Array(questions.length).fill(-1)
       quizStartTime.value = new Date()
       quizTimer.value = 0
-
-      console.log('Final currentQuiz.value before return:', currentQuiz.value)
 
       // Start timer
       startTimer()
@@ -349,8 +338,6 @@ Please try another module or contact an administrator to add questions for this 
   // Manual reset function for localStorage clearing
   const resetQuizSystem = () => {
     if (typeof window !== 'undefined') {
-      console.log('Manually resetting quiz system')
-
       // Clear all quiz-related localStorage data
       localStorage.removeItem('quiz-attempts')
       localStorage.removeItem('quiz-attempts-backup')
@@ -368,9 +355,6 @@ Please try another module or contact an administrator to add questions for this 
       quizTimer.value = 0
       quizStartTime.value = null
       stopTimer()
-
-      console.log('Quiz system reset complete - all attempts and cooldowns cleared')
-      console.log('quizAttempts.value after reset:', quizAttempts.value)
     }
   }
 

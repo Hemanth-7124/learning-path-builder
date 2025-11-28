@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf'
 import type { LearningPath, Module } from '~/types'
+import { formatDuration } from '~/utils/formatting'
 
 export const usePdfExport = () => {
   const generatePdfFromData = async (learningPath: LearningPath): Promise<void> => {
@@ -204,15 +205,7 @@ export const usePdfExport = () => {
     }
   }
 
-  const formatDuration = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    if (hours > 0) {
-      return `${hours}h ${mins > 0 ? `${mins}m` : ''}`.trim()
-    }
-    return `${mins}m`
-  }
-
+  
   return {
     generatePdfFromData
   }

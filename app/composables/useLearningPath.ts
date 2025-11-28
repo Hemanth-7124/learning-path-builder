@@ -1,4 +1,5 @@
 import type { Module, LearningPath, ModuleStatus, QuizAttempt, Certificate } from '~/types'
+import { formatDuration } from '~/utils/formatting'
 
 const LEARNING_PATH_KEY = 'learning-path'
 const CUSTOM_MODULES_KEY = 'custom-modules'
@@ -332,19 +333,6 @@ export const useLearningPath = () => {
       } else {
         certificates.value = []
       }
-    }
-  }
-
-  const formatDuration = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-
-    if (hours === 0) {
-      return `${mins}m`
-    } else if (mins === 0) {
-      return `${hours}h`
-    } else {
-      return `${hours}h ${mins}m`
     }
   }
 

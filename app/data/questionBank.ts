@@ -1336,21 +1336,3 @@ export function calculateScore(questions: Question[], userAnswers: number[]): nu
   return Math.round((correct / questions.length) * 100)
 }
 
-// Debug function to test filtering
-export function debugQuestionFiltering(category: string, difficulty: 'Beginner' | 'Intermediate' | 'Advanced', moduleId: string): void {
-  console.log('=== Debug Question Filtering ===')
-  console.log('Category:', category)
-  console.log('Difficulty:', difficulty)
-  console.log('Module ID:', moduleId)
-
-  const allQuestions = getQuestionsByCategory(category, difficulty, moduleId)
-  console.log('Total questions found:', allQuestions.length)
-
-  allQuestions.forEach((question, index) => {
-    console.log(`${index + 1}. ${question.text}`)
-    console.log(`   ID: ${question.id}`)
-    console.log(`   Module IDs: ${question.moduleIds ? question.moduleIds.join(', ') : 'General (no specific module)'}`)
-    console.log('')
-  })
-  console.log('=== End Debug ===')
-}

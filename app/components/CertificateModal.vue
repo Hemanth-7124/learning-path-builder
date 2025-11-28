@@ -176,6 +176,7 @@
 
 <script setup lang="ts">
 import type { Module, QuizAttempt, Certificate } from '~/types'
+import { formatDuration, formatDate } from '~/utils/formatting'
 import {
   XMarkIcon,
   TrophyIcon,
@@ -378,23 +379,6 @@ const handleShare = async () => {
   }
 }
 
-// Helper functions
-const formatDuration = (minutes: number): string => {
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  if (hours > 0) {
-    return `${hours}h ${mins}m`
-  }
-  return `${mins} minutes`
-}
-
-const formatDate = (date: Date): string => {
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
 </script>
 
 <style scoped>
