@@ -107,11 +107,14 @@ export const useQuiz = () => {
       )
 
       console.log('Questions retrieved:', questions.length)
-      console.log('Module ID:', module.id)
-      console.log('Questions found:', questions.map(q => ({ id: q.id, text: q.text, moduleIds: q.moduleIds })))
 
       if (questions.length === 0) {
-        console.error(`No questions available for ${module.category} - ${module.difficulty}`)
+        // Show user-friendly alert instead of console error
+        alert(`No quiz questions available for "${module.title}" at the ${module.difficulty} level.
+
+This module doesn't have specific questions assigned yet.
+
+Please try another module or contact an administrator to add questions for this module.`)
         return null
       }
 

@@ -1053,16 +1053,246 @@ export const questionBank: Question[] = [
     ],
     correctAnswer: 1,
     explanation: 'A Python dictionary is an unordered collection of key-value pairs that allows efficient lookup of values using keys.'
+  },
+
+  // React Native Fundamentals (react-native-basics)
+  {
+    id: 'react-native-basics-001',
+    text: 'What is React Native?',
+    category: 'Mobile Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['react-native-basics'],
+    options: [
+      'A CSS framework for mobile apps',
+      'A JavaScript framework for building native mobile apps',
+      'A mobile game engine',
+      'A mobile operating system'
+    ],
+    correctAnswer: 1,
+    explanation: 'React Native is a JavaScript framework for building native mobile apps for iOS and Android using React.'
+  },
+  {
+    id: 'react-native-basics-002',
+    text: 'What is the difference between React Native and React?',
+    category: 'Mobile Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['react-native-basics'],
+    options: [
+      'They are exactly the same',
+      'React Native uses native components, React uses web components',
+      'React Native is for web, React is for mobile',
+      'React Native is older than React'
+    ],
+    correctAnswer: 1,
+    explanation: 'React Native uses native mobile components while React uses web components like div, span, etc.'
+  },
+  {
+    id: 'react-native-basics-003',
+    text: 'What is the purpose of the StyleSheet API in React Native?',
+    category: 'Mobile Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['react-native-basics'],
+    options: [
+      'To style web pages',
+      'To create CSS files for mobile apps',
+      'To create styles that are optimized for mobile performance',
+      'To validate CSS syntax'
+    ],
+    correctAnswer: 2,
+    explanation: 'The StyleSheet API in React Native creates optimized style objects that are sent to native components for better performance.'
+  },
+
+  // Database Fundamentals (database-basics)
+  {
+    id: 'database-basics-001',
+    text: 'What is a primary key in a database?',
+    category: 'Backend Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['database-basics'],
+    options: [
+      'A password for the database',
+      'A unique identifier for each record in a table',
+      'A backup key',
+      'The first column in a table'
+    ],
+    correctAnswer: 1,
+    explanation: 'A primary key is a unique identifier for each record in a database table that ensures each row can be uniquely identified.'
+  },
+  {
+    id: 'database-basics-002',
+    text: 'What is SQL?',
+    category: 'Backend Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['database-basics'],
+    options: [
+      'A programming language for web development',
+      'A query language for managing relational databases',
+      'A markup language',
+      'A styling language'
+    ],
+    correctAnswer: 1,
+    explanation: 'SQL (Structured Query Language) is a domain-specific language for managing and querying relational databases.'
+  },
+  {
+    id: 'database-basics-003',
+    text: 'What is the difference between SQL and NoSQL databases?',
+    category: 'Backend Development',
+    difficulty: 'Intermediate',
+    moduleIds: ['database-basics'],
+    options: [
+      'SQL databases are faster than NoSQL',
+      'SQL uses structured data with schemas, NoSQL uses flexible data models',
+      'NoSQL databases are more secure',
+      'They are exactly the same'
+    ],
+    correctAnswer: 1,
+    explanation: 'SQL databases use structured, tabular data with predefined schemas, while NoSQL databases offer flexible data models like documents, key-value pairs, or graphs.'
+  },
+
+  // Docker Fundamentals (docker-basics)
+  {
+    id: 'docker-basics-001',
+    text: 'What is a Docker image?',
+    category: 'DevOps',
+    difficulty: 'Intermediate',
+    moduleIds: ['docker-basics'],
+    options: [
+      'A running instance of a container',
+      'A lightweight, standalone, executable package that includes everything needed to run software',
+      'A virtual machine',
+      'A backup file'
+    ],
+    correctAnswer: 1,
+    explanation: 'A Docker image is a lightweight, standalone, executable package that includes everything needed to run software including code, runtime, libraries, and settings.'
+  },
+  {
+    id: 'docker-basics-002',
+    text: 'What is the difference between Docker image and Docker container?',
+    category: 'DevOps',
+    difficulty: 'Intermediate',
+    moduleIds: ['docker-basics'],
+    options: [
+      'They are the same thing',
+      'Image is a template, container is a running instance of an image',
+      'Container is a template, image is a running instance',
+      'Image is larger than container'
+    ],
+    correctAnswer: 1,
+    explanation: 'A Docker image is a template that defines how to create a container, while a Docker container is a running instance of an image.'
+  },
+  {
+    id: 'docker-basics-003',
+    text: 'What is Dockerfile?',
+    category: 'DevOps',
+    difficulty: 'Intermediate',
+    moduleIds: ['docker-basics'],
+    options: [
+      'A configuration file for Docker settings',
+      'A text document that contains commands to assemble a Docker image',
+      'A log file for Docker containers',
+      'A backup of Docker images'
+    ],
+    correctAnswer: 1,
+    explanation: 'A Dockerfile is a text document that contains all the commands a user could call on the command line to assemble an image.'
+  },
+
+  // Effective Communication (communication-skills)
+  {
+    id: 'communication-skills-001',
+    text: 'What is active listening in communication?',
+    category: 'Soft Skills',
+    difficulty: 'Beginner',
+    moduleIds: ['communication-skills'],
+    options: [
+      'Speaking loudly so everyone can hear',
+      'Fully concentrating, understanding, and responding to what is being said',
+      'Writing notes during conversations',
+      'Agreeing with everything the speaker says'
+    ],
+    correctAnswer: 1,
+    explanation: 'Active listening is the practice of fully concentrating, understanding, responding to, and remembering what is being said.'
+  },
+  {
+    id: 'communication-skills-002',
+    text: 'What is the importance of non-verbal communication?',
+    category: 'Soft Skills',
+    difficulty: 'Beginner',
+    moduleIds: ['communication-skills'],
+    options: [
+      'It is not important in professional settings',
+      'It often conveys more meaning than words and includes body language, tone, and gestures',
+      'It only matters in personal relationships',
+      'It is the same as verbal communication'
+    ],
+    correctAnswer: 1,
+    explanation: 'Non-verbal communication often conveys more meaning than words and includes body language, tone of voice, facial expressions, and gestures.'
+  },
+  {
+    id: 'communication-skills-003',
+    text: 'What is feedback in the context of professional communication?',
+    category: 'Soft Skills',
+    difficulty: 'Beginner',
+    moduleIds: ['communication-skills'],
+    options: [
+      'Complaints about work performance',
+      'Information given about past behavior or performance to guide future improvement',
+      'Company announcements',
+      'Gossip between colleagues'
+    ],
+    correctAnswer: 1,
+    explanation: 'Professional feedback is constructive information provided about past performance to guide future improvement and development.'
+  },
+
+  // Agile Project Management (project-management)
+  {
+    id: 'project-management-001',
+    text: 'What is Scrum in Agile methodology?',
+    category: 'Soft Skills',
+    difficulty: 'Intermediate',
+    moduleIds: ['project-management'],
+    options: [
+      'A rugby term used in sports',
+      'An Agile framework for managing complex projects through iterative development',
+      'A type of project management software',
+      'A method for writing code'
+    ],
+    correctAnswer: 1,
+    explanation: 'Scrum is an Agile framework that enables teams to work together on complex products through iterative development and regular feedback.'
+  },
+  {
+    id: 'project-management-002',
+    text: 'What is a sprint in Agile development?',
+    category: 'Soft Skills',
+    difficulty: 'Intermediate',
+    moduleIds: ['project-management'],
+    options: [
+      'A short distance race',
+      'A time-boxed period of work (usually 1-4 weeks) where a team completes a set amount of work',
+      'A type of meeting',
+      'A debugging technique'
+    ],
+    correctAnswer: 1,
+    explanation: 'A sprint is a time-boxed period (typically 1-4 weeks) during which a team works on completing a set amount of work and delivers a potentially shippable product increment.'
+  },
+  {
+    id: 'project-management-003',
+    text: 'What is the role of a Scrum Master?',
+    category: 'Soft Skills',
+    difficulty: 'Intermediate',
+    moduleIds: ['project-management'],
+    options: [
+      'The team\'s primary coder',
+      'A servant-leader who facilitates Scrum processes and helps the team become self-organizing',
+      'The project manager who assigns tasks',
+      'The team\'s tester'
+    ],
+    correctAnswer: 1,
+    explanation: 'A Scrum Master is a servant-leader who facilitates Scrum processes, removes impediments, and helps the team become self-organizing and cross-functional.'
   }
 ]
 
 // Helper function to get questions by category, difficulty, and optionally module
 export function getQuestionsByCategory(category: string, difficulty: 'Beginner' | 'Intermediate' | 'Advanced', moduleId?: string): Question[] {
-  console.log(`=== Filtering Questions ===`)
-  console.log(`Category: ${category}`)
-  console.log(`Difficulty: ${difficulty}`)
-  console.log(`Module ID: ${moduleId || 'None'}`)
-
   return questionBank.filter(question => {
     // Filter by category and difficulty
     const categoryMatch = question.category === category
@@ -1079,12 +1309,7 @@ export function getQuestionsByCategory(category: string, difficulty: 'Beginner' 
       // so moduleMatch remains true
     }
 
-    const matches = categoryMatch && difficultyMatch && moduleMatch
-    if (matches && (moduleId || categoryMatch)) {
-      console.log(`✓ Matched: ${question.id} - ${question.text.substring(0, 50)}... (Module IDs: ${question.moduleIds ? question.moduleIds.join(', ') : 'General'})`)
-    }
-
-    return matches
+    return categoryMatch && difficultyMatch && moduleMatch
   })
 }
 
