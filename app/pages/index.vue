@@ -3,16 +3,16 @@
     <NuxtRouteAnnouncer />
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
-      <header class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex items-center justify-between h-16">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+      <header class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <div class="flex justify-between items-center h-16">
+            <div class="flex gap-3 items-center">
+              <div class="flex justify-center items-center w-8 h-8 bg-indigo-600 rounded-lg">
                 <AcademicCapIcon class="w-5 h-5 text-white" />
               </div>
               <h1 class="text-xl font-bold text-gray-900">Learning Path Builder</h1>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex gap-4 items-center">
               <span class="text-sm text-gray-600">
                 Build your personalized learning journey
               </span>
@@ -22,9 +22,9 @@
       </header>
 
       <!-- Main Content -->
-      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main class="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <!-- Mobile view - tabs -->
-        <div class="lg:hidden mb-6">
+        <div class="mb-6 lg:hidden">
           <div class="border-b border-gray-200">
             <nav class="flex -mb-px">
               <button
@@ -48,7 +48,7 @@
                 ]"
               >
                 Your Learning Path
-                <span v-if="moduleCount > 0" class="ml-2 bg-indigo-100 text-indigo-600 py-0.5 px-2 rounded-full text-xs">
+                <span v-if="moduleCount > 0" class="px-2 py-0.5 ml-2 text-xs text-indigo-600 bg-indigo-100 rounded-full">
                   {{ moduleCount }}
                 </span>
               </button>
@@ -83,14 +83,14 @@
         </div>
 
         <!-- Quick Stats (Mobile) -->
-        <div v-if="moduleCount > 0" class="lg:hidden mt-6 bg-white rounded-lg border border-gray-200 p-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4 text-sm text-gray-600">
-              <div class="flex items-center gap-1">
+        <div v-if="moduleCount > 0" class="p-4 mt-6 bg-white rounded-lg border border-gray-200 lg:hidden">
+          <div class="flex justify-between items-center">
+            <div class="flex gap-4 items-center text-sm text-gray-600">
+              <div class="flex gap-1 items-center">
                 <BookOpenIcon class="w-4 h-4" />
                 <span>{{ moduleCount }} modules</span>
               </div>
-              <div class="flex items-center gap-1">
+              <div class="flex gap-1 items-center">
                 <ClockIcon class="w-4 h-4" />
                 <span>{{ formatDuration(totalDuration) }}</span>
               </div>
@@ -100,30 +100,30 @@
       </main>
 
       <!-- Instructions overlay for first-time users -->
-      <div v-if="showInstructions" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg max-w-md w-full p-6">
-          <h2 class="text-xl font-bold text-gray-900 mb-4">Welcome to Learning Path Builder! 🎓</h2>
+      <div v-if="showInstructions" class="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black bg-opacity-50">
+        <div class="p-6 w-full max-w-md bg-white rounded-lg">
+          <h2 class="mb-4 text-xl font-bold text-gray-900">Welcome to Learning Path Builder! 🎓</h2>
           <div class="space-y-3 text-sm text-gray-600">
-            <div class="flex items-start gap-3">
-              <span class="text-indigo-600 font-semibold">1.</span>
+            <div class="flex gap-3 items-start">
+              <span class="font-semibold text-indigo-600">1.</span>
               <p>Browse available modules in the left panel</p>
             </div>
-            <div class="flex items-start gap-3">
-              <span class="text-indigo-600 font-semibold">2.</span>
+            <div class="flex gap-3 items-start">
+              <span class="font-semibold text-indigo-600">2.</span>
               <p>Create custom modules using the "Create Module" button</p>
             </div>
-            <div class="flex items-start gap-3">
-              <span class="text-indigo-600 font-semibold">3.</span>
+            <div class="flex gap-3 items-start">
+              <span class="font-semibold text-indigo-600">3.</span>
               <p>Drag modules to the right panel or click "Add" to add them to your path</p>
             </div>
-            <div class="flex items-start gap-3">
-              <span class="text-indigo-600 font-semibold">4.</span>
+            <div class="flex gap-3 items-start">
+              <span class="font-semibold text-indigo-600">4.</span>
               <p>Your progress is automatically saved in your browser</p>
             </div>
           </div>
           <button
             @click="showInstructions = false"
-            class="mt-6 w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
+            class="px-4 py-2 mt-6 w-full text-white bg-indigo-600 rounded-lg transition-colors hover:bg-indigo-700"
           >
             Get Started
           </button>
@@ -131,7 +131,7 @@
       </div>
 
       <!-- Module Creator Modal -->
-      <div v-if="showModuleCreator" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div v-if="showModuleCreator" class="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black bg-opacity-50">
         <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <ModuleCreator
             @close="showModuleCreator = false"
@@ -190,10 +190,10 @@ definePageMeta({
 })
 </script>
 
-<style scoped>
+<style>
 /* Custom scrollbar styles */
 @media (max-width: 1023px) {
-  .lg\\:h-\\[700px\\] {
+  .lg\:h-\[700px\] {
     height: 500px;
   }
 }

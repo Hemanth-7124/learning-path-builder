@@ -2,6 +2,8 @@ import type { Question, QuizAttempt, Module } from '~/types'
 import { QUIZ_CONFIG } from '~/types'
 import { getRandomQuestions, calculateScore } from '~/data/questionBank'
 import { useLearningPath } from '~/composables/useLearningPath'
+import { formatTime } from '~/utils/formatting'
+import { storage, STORAGE_KEYS } from '~/utils/storage'
 
 export const useQuiz = () => {
   // Quiz state management
@@ -17,9 +19,9 @@ export const useQuiz = () => {
   const loadQuizAttempts = () => {
     if (typeof window !== 'undefined') {
       // Check if localStorage was manually cleared (no quiz attempts data exists)
-      const stored = localStorage.getItem('quiz-attempts')
-      const backupStored = localStorage.getItem('quiz-attempts-backup')
-      const timestampStored = localStorage.getItem('quiz-attempts-timestamp')
+      const stored = storage.get(STORAGE_KEYS.QUIZ_ATTEMPTS, null)
+      const backupStored = storage.get(STORAGE_KEYS.QUIZ_ATTEMPTS_BACKUP, null)
+      const timestampStored = storage.get(STORAGE_KEYS.QUIZ_ATTEMPTS_TIMESTAMP, null)
 
       // If no quiz data exists at all, assume manual reset and clear everything
       if (!stored && !backupStored && !timestampStored) {
@@ -27,9 +29,9 @@ export const useQuiz = () => {
         quizAttempts.value = []
 
         // Clear any remaining quiz-related data
-        localStorage.removeItem('quiz-attempts')
-        localStorage.removeItem('quiz-attempts-backup')
-        localStorage.removeItem('quiz-attempts-timestamp')
+        storage.remove(STORAGE_KEYS.QUIZ_ATTEMPTS)
+        storage.remove(STORAGE_KEYS.QUIZ_ATTEMPTS_BACKUP)
+        storage.remove(STORAGE_KEYS.QUIZ_ATTEMPTS_TIMESTAMP)
 
         // Also clear any active quiz state
         currentQuiz.value = null
@@ -44,25 +46,15 @@ export const useQuiz = () => {
 
       let attempts: any[] = []
 
-      // Load from primary storage
-      if (stored) {
-        try {
-          attempts = JSON.parse(stored)
-          attempts = Array.isArray(attempts) ? attempts : []
-        } catch (error) {
-          console.error('Error loading primary quiz attempts:', error)
-        }
+      // Load from primary storage (already parsed by storage.get)
+      if (stored && Array.isArray(stored)) {
+        attempts = stored
       }
 
       // If primary is empty or invalid, try backup
-      if ((attempts.length === 0) && backupStored) {
-        try {
-          attempts = JSON.parse(backupStored)
-          attempts = Array.isArray(attempts) ? attempts : []
-          console.log('Recovered quiz attempts from backup storage')
-        } catch (error) {
-          console.error('Error loading backup quiz attempts:', error)
-        }
+      if ((attempts.length === 0) && backupStored && Array.isArray(backupStored)) {
+        attempts = backupStored
+        console.log('Recovered quiz attempts from backup storage')
       }
 
       // Validate and restore attempts
@@ -79,16 +71,14 @@ export const useQuiz = () => {
   // Enhanced save quiz attempts with backup storage
   const saveQuizAttempts = () => {
     if (typeof window !== 'undefined') {
-      const data = JSON.stringify(quizAttempts.value)
-
-      // Save to primary storage
-      localStorage.setItem('quiz-attempts', data)
+      // Save to primary storage (storage.set() will handle JSON.stringify)
+      storage.set(STORAGE_KEYS.QUIZ_ATTEMPTS, quizAttempts.value)
 
       // Create backup storage for bypass protection
-      localStorage.setItem('quiz-attempts-backup', data)
+      storage.set(STORAGE_KEYS.QUIZ_ATTEMPTS_BACKUP, quizAttempts.value)
 
       // Add timestamp to track last save
-      localStorage.setItem('quiz-attempts-timestamp', new Date().toISOString())
+      storage.set(STORAGE_KEYS.QUIZ_ATTEMPTS_TIMESTAMP, new Date().toISOString())
     }
   }
 
@@ -361,9 +351,9 @@ ${actionMessage}`)
   const resetQuizSystem = () => {
     if (typeof window !== 'undefined') {
       // Clear all quiz-related localStorage data
-      localStorage.removeItem('quiz-attempts')
-      localStorage.removeItem('quiz-attempts-backup')
-      localStorage.removeItem('quiz-attempts-timestamp')
+      storage.remove(STORAGE_KEYS.QUIZ_ATTEMPTS)
+      storage.remove(STORAGE_KEYS.QUIZ_ATTEMPTS_BACKUP)
+      storage.remove(STORAGE_KEYS.QUIZ_ATTEMPTS_TIMESTAMP)
 
       // Force immediate reactive update by clearing array first
       const currentLength = quizAttempts.value.length
@@ -454,13 +444,6 @@ ${actionMessage}`)
 
   // Check if quiz is active
   const isQuizActive = computed(() => currentQuiz.value !== null)
-
-  // Format time for display
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
-  }
 
   // Initialize on mount
   onMounted(() => {
