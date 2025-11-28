@@ -314,7 +314,7 @@ const {
 } = useLearningPath()
 
 // Use quiz composable
-const { canAttemptQuiz, getRemainingCooldown } = useQuiz()
+const { canAttemptQuiz, getRemainingCooldown, getQuizAttemptStatus } = useQuiz()
 
 const isDragOver = ref(false)
 const draggedModuleIndex = ref<number | null>(null)
@@ -447,14 +447,7 @@ const handleModulePreview = (module: Module) => {
 }
 
 const handleStartQuiz = (module: Module) => {
-  // Check if user can attempt quiz
-  if (!canAttemptQuiz(module.id)) {
-    const remainingTime = getRemainingCooldown(module.id)
-    const minutes = Math.ceil(remainingTime / 60000)
-    alert(`You must wait ${minutes} minute(s) before attempting the quiz again.`)
-    return
-  }
-
+  // Always open the quiz modal - let the modal handle the lock UI
   quizModule.value = module
   showQuizModal.value = true
 }

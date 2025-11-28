@@ -108,6 +108,6 @@ export interface Certificate {
 export const QUIZ_CONFIG = {
   QUESTIONS_PER_QUIZ: 5,
   PASSING_SCORE: 100, // 100% required - all 5 questions must be correct
-  ATTEMPT_COOLDOWN: 120000, // 2 minutes in milliseconds
+  ATTEMPT_COOLDOWN: 300000, // 5 minutes in milliseconds
   MAX_ATTEMPTS: 3
 } as const

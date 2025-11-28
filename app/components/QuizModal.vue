@@ -26,6 +26,19 @@
                   {{ formattedQuizTimer }}
                 </span>
               </div>
+
+              <!-- Failed Attempts Display -->
+              <div class="mt-2">
+                <span
+                  class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                  :class="{
+                    'bg-red-100 text-red-800': quizStatus.failedAttempts > 0,
+                    'bg-gray-100 text-gray-800': quizStatus.failedAttempts === 0
+                  }"
+                >
+                  Failed Attempts: {{ quizStatus.failedAttempts }}/3
+                </span>
+              </div>
             </div>
           </div>
           <button
@@ -55,10 +68,71 @@
       <div class="p-6">
         <!-- Quiz Content -->
 
-        <!-- Debug Info -->
-     
+        <!-- Lock UI when user has 3 failed attempts -->
+        <div v-if="isLockedOut" class="space-y-6 text-center py-12">
+          <!-- Lock Icon -->
+          <div class="flex justify-center">
+            <div class="flex justify-center items-center w-20 h-20 bg-red-100 rounded-full">
+              <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+            </div>
+          </div>
 
-        <div v-if="!quizCompleted" class="space-y-6">
+          <!-- Lock Message -->
+          <div>
+            <h3 class="mb-2 text-2xl font-bold text-gray-900">
+              Quiz Locked
+            </h3>
+            <p class="text-gray-600 mb-4">
+              You have reached the maximum number of attempts for this quiz.
+            </p>
+
+            <!-- Cooldown Message -->
+            <div v-if="quizStatus.isInCooldown" class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p class="text-yellow-800 font-medium">
+                Please try again after {{ Math.ceil(quizStatus.remainingCooldown / 60000) }} minute(s).
+              </p>
+            </div>
+            <div v-else class="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p class="text-green-800 font-medium">
+                You may try again now.
+              </p>
+            </div>
+          </div>
+
+          <!-- Failed Attempts Display -->
+          <div class="p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600">
+              Failed Attempts: <span class="font-bold text-red-600">{{ quizStatus.failedAttempts }}/3</span>
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-3 justify-center">
+            <button
+              @click="handleResetSystem"
+              class="px-4 py-2 text-red-700 bg-red-100 rounded-lg transition-colors hover:bg-red-200 border border-red-300"
+            >
+              Reset System
+            </button>
+            <button
+              @click="emit('close')"
+              class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg transition-colors hover:bg-gray-300"
+            >
+              Close
+            </button>
+          </div>
+
+          <!-- Reset Instructions -->
+          <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class="text-xs text-blue-800">
+              💡 <strong>Tip:</strong> You can also reset the lock system by clearing your browser's Local Storage. Use the "Reset System" button for a quick reset.
+            </p>
+          </div>
+        </div>
+
+        <div v-else-if="!quizCompleted" class="space-y-6">
           <!-- Question -->
           <div v-if="currentQuestion">
          
@@ -230,7 +304,7 @@
       </div>
 
       <!-- Actions -->
-      <div v-if="!quizCompleted" class="sticky bottom-0 p-6 bg-gray-50 rounded-b-xl border-t border-gray-200">
+      <div v-if="!quizCompleted && !isLockedOut" class="sticky bottom-0 p-6 bg-gray-50 rounded-b-xl border-t border-gray-200">
         <div class="flex justify-between items-center">
           <div class="flex gap-3">
             <button
@@ -314,7 +388,11 @@ const {
   previousQuestion,
   submitQuiz,
   cancelQuiz,
-  formattedQuizTimer
+  formattedQuizTimer,
+  getQuizAttemptStatus,
+  getQuizAttempts,
+  loadQuizAttempts,
+  resetQuizSystem
 } = useQuiz()
 
 // Local state
@@ -322,6 +400,22 @@ const selectedAnswer = ref(-1)
 const showFeedback = ref(false)
 const quizCompleted = ref(false)
 const quizResults = ref<QuizAttempt | null>(null)
+
+// Get quiz attempt status for this module
+const quizStatus = computed(() => getQuizAttemptStatus(props.module.id))
+const isLockedOut = computed(() => quizStatus.value.failedAttempts >= 3)
+
+// Helper functions (must be defined before usage)
+// Check if any quiz data exists in localStorage
+const checkForQuizData = (): boolean => {
+  if (typeof window === 'undefined') return false
+
+  const quizAttempts = localStorage.getItem('quiz-attempts')
+  const backupAttempts = localStorage.getItem('quiz-attempts-backup')
+  const timestamp = localStorage.getItem('quiz-attempts-timestamp')
+
+  return !!(quizAttempts || backupAttempts || timestamp)
+}
 
 // Computed properties
 const currentQuestion = computed(() => getCurrentQuestion())
@@ -338,7 +432,32 @@ const isCorrectAnswer = computed(() => {
 watch(() => props.isOpen, (newVal, oldVal) => {
   console.log('QuizModal watch triggered - isOpen changed from', oldVal, 'to', newVal)
   if (newVal) {
-    console.log('QuizModal is opening, calling startQuizForModule')
+    console.log('QuizModal is opening, checking localStorage and loading attempts')
+
+    // Check if localStorage has been manually cleared
+    const hasAnyQuizData = checkForQuizData()
+    console.log('Has any quiz data in localStorage:', hasAnyQuizData)
+
+    if (!hasAnyQuizData) {
+      console.log('No quiz data found - forcing system reset')
+      resetQuizSystem()
+
+      // Force a delay to ensure reactive updates complete
+      setTimeout(() => {
+        console.log('After reset - quizStatus.failedAttempts:', quizStatus.value.failedAttempts)
+        loadQuizAttempts()
+
+        nextTick().then(() => {
+          console.log('After load attempts - quizStatus.failedAttempts:', quizStatus.value.failedAttempts)
+          startQuizForModule()
+        })
+      }, 50)
+      return
+    }
+
+    // Load quiz attempts to ensure we have the latest data
+    loadQuizAttempts()
+
     // Use immediate execution for better reliability
     nextTick().then(() => {
       startQuizForModule()
@@ -350,7 +469,29 @@ watch(() => props.isOpen, (newVal, oldVal) => {
 watch(() => props.module, (newModule) => {
   console.log('Module changed:', newModule?.title)
   if (newModule && props.isOpen) {
-    console.log('Module changed while open, restarting quiz')
+    console.log('Module changed while open, checking localStorage and restarting quiz')
+
+    // Check if localStorage has been manually cleared
+    const hasAnyQuizData = checkForQuizData()
+    console.log('Has any quiz data in localStorage:', hasAnyQuizData)
+
+    if (!hasAnyQuizData) {
+      console.log('No quiz data found - forcing system reset')
+      resetQuizSystem()
+
+      // Force a delay to ensure reactive updates complete
+      setTimeout(() => {
+        console.log('After reset - quizStatus.failedAttempts:', quizStatus.value.failedAttempts)
+        loadQuizAttempts()
+
+        nextTick().then(() => {
+          console.log('After load attempts - quizStatus.failedAttempts:', quizStatus.value.failedAttempts)
+          startQuizForModule()
+        })
+      }, 50)
+      return
+    }
+
     nextTick().then(() => {
       startQuizForModule()
     })
@@ -361,23 +502,29 @@ watch(() => props.module, (newModule) => {
 const startQuizForModule = () => {
   console.log('=== startQuizForModule called ===')
   console.log('Module props:', props.module)
-  console.log('Before startQuiz - currentQuiz:', currentQuiz.value)
+  console.log('Quiz status:', quizStatus.value)
+  console.log('Is locked out:', isLockedOut.value)
 
   selectedAnswer.value = -1
   showFeedback.value = false
   quizCompleted.value = false
   quizResults.value = null
 
-  console.log('Calling startQuiz...')
-  const quiz = startQuiz(props.module)
-  console.log('startQuiz returned:', quiz)
-  console.log('After startQuiz - currentQuiz:', currentQuiz.value)
+  // Only start quiz if user is not locked out
+  if (!isLockedOut.value) {
+    console.log('Calling startQuiz...')
+    const quiz = startQuiz(props.module)
+    console.log('startQuiz returned:', quiz)
+    console.log('After startQuiz - currentQuiz:', currentQuiz.value)
 
-  if (!quiz) {
-    console.error('Failed to start quiz')
-    emit('close')
+    if (!quiz) {
+      console.error('Failed to start quiz')
+      emit('close')
+    } else {
+      console.log('Quiz started successfully!')
+    }
   } else {
-    console.log('Quiz started successfully!')
+    console.log('User is locked out, not starting quiz')
   }
 }
 
@@ -459,6 +606,23 @@ const handleCertificate = () => {
   }
 }
 
+// Handle manual reset of quiz system
+const handleResetSystem = () => {
+  const confirmed = confirm(
+    'Are you sure you want to reset the quiz system? This will clear all your quiz attempts and cooldowns for all modules.'
+  )
+
+  if (confirmed) {
+    resetQuizSystem()
+
+    // Reload attempts and restart quiz for current module
+    setTimeout(() => {
+      loadQuizAttempts()
+      startQuizForModule()
+    }, 100)
+  }
+}
+
 // Format time helper
 const formatTime = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60)
@@ -480,7 +644,29 @@ const getDifficultyClass = (difficulty: string) => {
 onMounted(() => {
   console.log('QuizModal mounted with isOpen:', props.isOpen)
   if (props.isOpen && props.module) {
-    console.log('QuizModal is open on mount, starting quiz')
+    console.log('QuizModal is open on mount, checking localStorage and starting quiz')
+
+    // Check if localStorage has been manually cleared
+    const hasAnyQuizData = checkForQuizData()
+    console.log('Has any quiz data in localStorage:', hasAnyQuizData)
+
+    if (!hasAnyQuizData) {
+      console.log('No quiz data found - forcing system reset')
+      resetQuizSystem()
+
+      // Force a delay to ensure reactive updates complete
+      setTimeout(() => {
+        console.log('After reset - quizStatus.failedAttempts:', quizStatus.value.failedAttempts)
+        loadQuizAttempts()
+
+        nextTick().then(() => {
+          console.log('After load attempts - quizStatus.failedAttempts:', quizStatus.value.failedAttempts)
+          startQuizForModule()
+        })
+      }, 50)
+      return
+    }
+
     nextTick().then(() => {
       startQuizForModule()
     })

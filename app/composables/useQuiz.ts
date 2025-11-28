@@ -12,29 +12,82 @@ export const useQuiz = () => {
   const quizTimer = ref<number>(0)
   const timerInterval = ref<NodeJS.Timeout | null>(null)
 
-  // Load quiz attempts from localStorage
+  // Enhanced load quiz attempts with bypass protection and manual reset detection
   const loadQuizAttempts = () => {
     if (typeof window !== 'undefined') {
+      // Check if localStorage was manually cleared (no quiz attempts data exists)
       const stored = localStorage.getItem('quiz-attempts')
+      const backupStored = localStorage.getItem('quiz-attempts-backup')
+      const timestampStored = localStorage.getItem('quiz-attempts-timestamp')
+
+      // If no quiz data exists at all, assume manual reset and clear everything
+      if (!stored && !backupStored && !timestampStored) {
+        console.log('No quiz data found in localStorage - assuming manual reset, clearing all quiz state')
+        quizAttempts.value = []
+
+        // Clear any remaining quiz-related data
+        localStorage.removeItem('quiz-attempts')
+        localStorage.removeItem('quiz-attempts-backup')
+        localStorage.removeItem('quiz-attempts-timestamp')
+
+        // Also clear any active quiz state
+        currentQuiz.value = null
+        currentQuestionIndex.value = 0
+        userAnswers.value = []
+        quizTimer.value = 0
+        quizStartTime.value = null
+        stopTimer()
+
+        return
+      }
+
+      let attempts: any[] = []
+
+      // Load from primary storage
       if (stored) {
         try {
-          const attempts = JSON.parse(stored)
-          quizAttempts.value = Array.isArray(attempts) ? attempts.map((attempt: any) => ({
-            ...attempt,
-            timestamp: new Date(attempt.timestamp)
-          })) : []
+          attempts = JSON.parse(stored)
+          attempts = Array.isArray(attempts) ? attempts : []
         } catch (error) {
-          console.error('Error loading quiz attempts from localStorage:', error)
-          quizAttempts.value = []
+          console.error('Error loading primary quiz attempts:', error)
         }
       }
+
+      // If primary is empty or invalid, try backup
+      if ((attempts.length === 0) && backupStored) {
+        try {
+          attempts = JSON.parse(backupStored)
+          attempts = Array.isArray(attempts) ? attempts : []
+          console.log('Recovered quiz attempts from backup storage')
+        } catch (error) {
+          console.error('Error loading backup quiz attempts:', error)
+        }
+      }
+
+      // Validate and restore attempts
+      quizAttempts.value = attempts.map((attempt: any) => ({
+        ...attempt,
+        timestamp: new Date(attempt.timestamp)
+      }))
+
+      // Save to maintain consistency
+      saveQuizAttempts()
     }
   }
 
-  // Save quiz attempts to localStorage
+  // Enhanced save quiz attempts with backup storage
   const saveQuizAttempts = () => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('quiz-attempts', JSON.stringify(quizAttempts.value))
+      const data = JSON.stringify(quizAttempts.value)
+
+      // Save to primary storage
+      localStorage.setItem('quiz-attempts', data)
+
+      // Create backup storage for bypass protection
+      localStorage.setItem('quiz-attempts-backup', data)
+
+      // Add timestamp to track last save
+      localStorage.setItem('quiz-attempts-timestamp', new Date().toISOString())
     }
   }
 
@@ -183,39 +236,51 @@ export const useQuiz = () => {
     }
   }
 
-  // Check if user can attempt quiz
+  // Enhanced check if user can attempt quiz with 3-attempt continuous rule
   const canAttemptQuiz = (moduleId: string): boolean => {
     const attempts = quizAttempts.value.filter(attempt => attempt.moduleId === moduleId)
 
-    // Check max attempts
-    if (attempts.length >= QUIZ_CONFIG.MAX_ATTEMPTS) {
-      return false
-    }
+    // Check if user has exactly 3 continuous failed attempts
+    const recentAttempts = attempts.slice(-3) // Get last 3 attempts
+    const allThreeFailed = recentAttempts.length === 3 && recentAttempts.every(attempt => !attempt.passed)
 
-    // Check cooldown period
-    const lastAttempt = attempts[attempts.length - 1]
-    if (lastAttempt) {
-      // Handle both Date objects and string timestamps
-      const timestamp = typeof lastAttempt.timestamp === 'string'
-        ? new Date(lastAttempt.timestamp)
-        : lastAttempt.timestamp
-      const cooldownEnd = new Date(timestamp.getTime() + QUIZ_CONFIG.ATTEMPT_COOLDOWN)
-      if (new Date() < cooldownEnd) {
-        return false
+    if (allThreeFailed) {
+      // Check if cooldown period has expired
+      const lastAttempt = recentAttempts[2] // The 3rd failed attempt
+      if (lastAttempt) {
+        const timestamp = typeof lastAttempt.timestamp === 'string'
+          ? new Date(lastAttempt.timestamp)
+          : lastAttempt.timestamp
+        const cooldownEnd = new Date(timestamp.getTime() + QUIZ_CONFIG.ATTEMPT_COOLDOWN)
+
+        if (new Date() < cooldownEnd) {
+          return false // Still in cooldown period
+        }
+        // Cooldown expired, user can attempt again
+        return true
       }
     }
 
+    // If less than 3 attempts, or some attempts passed, allow normally
     return true
   }
 
-  // Get remaining cooldown time in milliseconds
+  // Enhanced get remaining cooldown time with 3-attempt rule
   const getRemainingCooldown = (moduleId: string): number => {
     const attempts = quizAttempts.value.filter(attempt => attempt.moduleId === moduleId)
-    const lastAttempt = attempts[attempts.length - 1]
 
+    // Check if user has exactly 3 continuous failed attempts
+    const recentAttempts = attempts.slice(-3) // Get last 3 attempts
+    const allThreeFailed = recentAttempts.length === 3 && recentAttempts.every(attempt => !attempt.passed)
+
+    if (!allThreeFailed) {
+      return 0 // No cooldown if not 3 continuous failures
+    }
+
+    // Calculate cooldown from the 3rd failed attempt
+    const lastAttempt = recentAttempts[2] // The 3rd failed attempt
     if (!lastAttempt) return 0
 
-    // Handle both Date objects and string timestamps
     const timestamp = typeof lastAttempt.timestamp === 'string'
       ? new Date(lastAttempt.timestamp)
       : lastAttempt.timestamp
@@ -228,6 +293,79 @@ export const useQuiz = () => {
   // Get quiz attempts for a specific module
   const getQuizAttempts = (moduleId: string): QuizAttempt[] => {
     return quizAttempts.value.filter(attempt => attempt.moduleId === moduleId)
+  }
+
+  // Get quiz attempt status for UI messaging
+  const getQuizAttemptStatus = (moduleId: string): {
+    canAttempt: boolean
+    remainingCooldown: number
+    attemptsUsed: number
+    failedAttempts: number
+    maxAttempts: number
+    isInCooldown: boolean
+    message: string
+  } => {
+    const attempts = getQuizAttempts(moduleId)
+    const failedAttempts = attempts.filter(attempt => !attempt.passed).length
+    const passedAttempts = attempts.filter(attempt => attempt.passed).length
+    const remainingCooldown = getRemainingCooldown(moduleId)
+    const canAttempt = canAttemptQuiz(moduleId)
+
+    // Check if user has exactly 3 continuous failed attempts
+    const recentAttempts = attempts.slice(-3)
+    const allThreeFailed = recentAttempts.length === 3 && recentAttempts.every(attempt => !attempt.passed)
+    const isInCooldown = allThreeFailed && remainingCooldown > 0
+
+    let message = ''
+
+    if (isInCooldown) {
+      const minutes = Math.ceil(remainingCooldown / 60000)
+      message = `Maximum attempts reached. Try again after ${minutes} minute(s).`
+    } else if (allThreeFailed && remainingCooldown === 0) {
+      message = `You have failed 3 consecutive attempts. You may try again now.`
+    } else if (failedAttempts >= 2) {
+      message = `You have ${failedAttempts} failed attempt(s). One more failure will trigger a cooldown.`
+    } else {
+      message = `Quiz available. ${passedAttempts > 0 ? 'Previous attempts: ' + attempts.length : ''}`
+    }
+
+    return {
+      canAttempt,
+      remainingCooldown,
+      attemptsUsed: attempts.length,
+      failedAttempts,
+      maxAttempts: QUIZ_CONFIG.MAX_ATTEMPTS,
+      isInCooldown,
+      message
+    }
+  }
+
+  // Manual reset function for localStorage clearing
+  const resetQuizSystem = () => {
+    if (typeof window !== 'undefined') {
+      console.log('Manually resetting quiz system')
+
+      // Clear all quiz-related localStorage data
+      localStorage.removeItem('quiz-attempts')
+      localStorage.removeItem('quiz-attempts-backup')
+      localStorage.removeItem('quiz-attempts-timestamp')
+
+      // Force immediate reactive update by clearing array first
+      const currentLength = quizAttempts.value.length
+      quizAttempts.value.splice(0, currentLength)
+      quizAttempts.value = []
+
+      // Clear any active quiz
+      currentQuiz.value = null
+      currentQuestionIndex.value = 0
+      userAnswers.value = []
+      quizTimer.value = 0
+      quizStartTime.value = null
+      stopTimer()
+
+      console.log('Quiz system reset complete - all attempts and cooldowns cleared')
+      console.log('quizAttempts.value after reset:', quizAttempts.value)
+    }
   }
 
   // Get quiz statistics
@@ -345,6 +483,9 @@ export const useQuiz = () => {
     getCurrentQuestion,
     getQuizProgress,
     formatTime,
+    getQuizAttemptStatus,
+    loadQuizAttempts,
+    resetQuizSystem,
 
     // Timer formatting
     formattedQuizTimer: computed(() => formatTime(quizTimer.value))
