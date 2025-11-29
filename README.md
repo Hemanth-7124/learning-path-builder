@@ -1,8 +1,50 @@
 # Learning Path Builder
 
-## Project Overview
+[![Multi-Path Learning System](https://img.shields.io/badge/Feature-Multi--Path-Informational?style=for-the-badge)](https://github.com/yourusername/learning-path-builder)
+[![Vue 3](https://img.shields.io/badge/Vue-3.5.25-4FC08D?style=for-the-badge&logo=vue.js)](https://vuejs.org/)
+[![Nuxt 4](https://img.shields.io/badge/Nuxt-4.2.1-00DC82?style=for-the-badge&logo=nuxt.js)](https://nuxt.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 
-**Learning Path Builder** is a comprehensive educational platform that allows users to create, manage, and track personalized learning journeys. This web application empowers learners to build structured educational paths by selecting from a rich library of modules or creating custom content tailored to their specific needs.
+## 🎯 Project Overview
+
+**Learning Path Builder** is a comprehensive educational platform that allows users to create, manage, and track **multiple personalized learning journeys**. This web application empowers learners to build structured educational paths by selecting from a rich library of modules or creating custom content tailored to their specific needs.
+
+### 🆕 NEW: Multi-Path Support
+- **✅ Multiple Learning Paths**: Create unlimited learning paths with independent progress tracking
+- **✅ Path Switching**: Seamlessly switch between different learning journeys
+- **✅ Data Isolation**: Each path has its own modules, progress, quizzes, and certificates
+- **✅ Visual Organization**: Color-coding and tags for better path management
+- **✅ Import/Export**: Share learning paths between devices or with others
+- **✅ Automatic Migration**: Existing single-path data automatically converted
+
+## 🚀 Quick Start
+
+### For New Users
+1. **Create Your First Path**: Click "Manage Paths" → "Create New Path"
+2. **Add Modules**: Drag modules from the left panel to your path
+3. **Track Progress**: Complete modules and take quizzes to earn certificates
+4. **Organize**: Create multiple paths for different learning goals
+
+### For Existing Users
+1. **Automatic Migration**: Your existing data is automatically converted
+2. **Explore New Features**: Click "Manage Paths" to see the new interface
+3. **Create Additional Paths**: Organize different learning journeys
+4. **Customize**: Add colors and tags to better organize your paths
+
+### For Developers
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/learning-path-builder.git
+
+# Install dependencies
+cd learning-path-builder
+npm install
+
+# Start development server
+npm run dev
+
+# Open http://localhost:3000
+```
 
 ### What is the purpose of this project?
 
@@ -22,14 +64,25 @@ The Learning Path Builder serves as an interactive educational management system
 - **Professional Development**: Career changers can plan skill acquisition paths for new industries
 - **Online Course Creation**: Educators can build comprehensive courses with assessments and certifications
 
-## Current Features
+## 🚀 Current Features
 
-### 🎓 Learning Path Management
+### 🆕 Multi-Path Learning System
+- **Multiple Learning Paths**: Create unlimited learning paths with custom names, colors, and tags
+- **Path Switching**: Desktop dropdown and mobile modal for easy path switching
+- **Independent Progress**: Each path maintains separate module progress and completion status
+- **Path-Specific Data**: Isolated quiz attempts, certificates, and custom modules per path
+- **Visual Organization**: Color-coded paths with custom tags for categorization
+- **Path Management**: Create, edit, duplicate, archive, and delete learning paths
+- **Search & Filter**: Find paths by name, description, or tags; sort by various criteria
+- **Import/Export**: Share learning paths as JSON files for backup or sharing
+- **Automatic Migration**: Seamless upgrade from single-path to multi-path format
+
+### 🎓 Enhanced Learning Path Management
 - **Drag-and-Drop Interface**: Intuitive module ordering with visual feedback
 - **Progress Tracking**: Real-time monitoring of learning advancement (0-100% completion)
 - **Status Management**: Track module status (not-started, in-progress, quiz-required, quiz-passed, completed)
 - **Duration Calculation**: Automatic computation of total learning path duration
-- **Persistent Storage**: Automatic browser-based storage using localStorage
+- **Persistent Storage**: Automatic browser-based storage using localStorage with path isolation
 
 ### 📚 Module System
 - **Pre-built Library**: 12+ sample modules across various technology domains

@@ -6,20 +6,69 @@
       <header class="bg-white border-b border-gray-200 shadow-sm">
         <div class="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div class="flex justify-between items-center h-16">
+            <!-- Left Section - Logo and Title -->
             <div class="flex gap-3 items-center">
               <div class="flex justify-center items-center w-8 h-8 bg-indigo-600 rounded-lg">
                 <AcademicCapIcon class="w-5 h-5 text-white" />
               </div>
               <h1 class="text-xl font-bold text-gray-900">Learning Path Builder</h1>
             </div>
-            <div class="flex gap-4 items-center">
-              <span class="text-sm text-gray-600">
-                Build your personalized learning journey
-              </span>
+
+            <!-- Center Section - Path Selector (Desktop) -->
+            <div class="hidden md:block">
+              <PathSelector />
+            </div>
+
+            <!-- Right Section - Actions -->
+            <div class="flex gap-3 items-center">
+              <!-- Path Management Button (Desktop) -->
+              <button
+                @click="showPathManager = true"
+                class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              >
+                <Cog6ToothIcon class="w-4 h-4" />
+                <span class="hidden lg:inline">Manage Paths</span>
+              </button>
+
+              <!-- Mobile Path Selector -->
+              <button
+                @click="showMobilePathSelector = true"
+                class="flex gap-2 items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 md:hidden"
+              >
+                <SwatchIcon class="w-4 h-4" />
+                <span>{{ currentLearningPath?.name || 'Select Path' }}</span>
+              </button>
             </div>
           </div>
         </div>
       </header>
+
+      <!-- Mobile Path Selector Bar -->
+      <div v-if="currentLearningPath" class="md:hidden bg-gray-50 border-b border-gray-200">
+        <div class="px-4 py-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-3 h-3 rounded-full"
+                :style="{ backgroundColor: currentLearningPath.color || '#6366f1' }"
+              ></div>
+              <div>
+                <h3 class="text-sm font-medium text-gray-900">{{ currentLearningPath.name }}</h3>
+                <p class="text-xs text-gray-500">{{ moduleCount || 0 }} modules • {{ formatDuration(totalDuration || 0) }}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-medium text-gray-900">{{ overallProgress || 0 }}%</div>
+              <div class="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  class="h-full bg-indigo-600 transition-all duration-300"
+                  :style="{ width: `${overallProgress || 0}%` }"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Main Content -->
       <main class="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -83,16 +132,16 @@
         </div>
 
         <!-- Quick Stats (Mobile) -->
-        <div v-if="moduleCount > 0" class="p-4 mt-6 bg-white rounded-lg border border-gray-200 lg:hidden">
+        <div v-if="(moduleCount || 0) > 0" class="p-4 mt-6 bg-white rounded-lg border border-gray-200 lg:hidden">
           <div class="flex justify-between items-center">
             <div class="flex gap-4 items-center text-sm text-gray-600">
               <div class="flex gap-1 items-center">
                 <BookOpenIcon class="w-4 h-4" />
-                <span>{{ moduleCount }} modules</span>
+                <span>{{ moduleCount || 0 }} modules</span>
               </div>
               <div class="flex gap-1 items-center">
                 <ClockIcon class="w-4 h-4" />
-                <span>{{ formatDuration(totalDuration) }}</span>
+                <span>{{ formatDuration(totalDuration || 0) }}</span>
               </div>
             </div>
           </div>
@@ -139,6 +188,65 @@
           />
         </div>
       </div>
+
+      <!-- Path Manager Modal -->
+      <PathManager
+        v-if="showPathManager"
+        @close="showPathManager = false"
+      />
+
+      <!-- Mobile Path Selector Modal -->
+      <div v-if="showMobilePathSelector" class="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black bg-opacity-50">
+        <div class="w-full max-w-md">
+          <div class="p-4 bg-white rounded-lg">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-medium text-gray-900">Select Learning Path</h3>
+              <button
+                @click="showMobilePathSelector = false"
+                class="text-gray-400 hover:text-gray-500"
+              >
+                <XMarkIcon class="w-6 h-6" />
+              </button>
+            </div>
+            <div class="space-y-2">
+              <button
+                v-for="path in filteredPaths"
+                :key="path.id"
+                @click="selectPath(path.id)"
+                class="w-full p-3 text-left border rounded-lg transition-colors"
+                :class="[
+                  path.id === activePathId
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-gray-200 hover:bg-gray-50'
+                ]"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-3 h-3 rounded-full flex-shrink-0"
+                    :style="{ backgroundColor: path.color || '#6366f1' }"
+                  ></div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ path.name }}</p>
+                    <p class="text-xs text-gray-500">{{ path.modules.length }} modules</p>
+                  </div>
+                  <CheckIcon
+                    v-if="path.id === activePathId"
+                    class="w-5 h-5 text-indigo-600 flex-shrink-0"
+                  />
+                </div>
+              </button>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-200">
+              <button
+                @click="createNewPath"
+                class="w-full px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100"
+              >
+                Create New Path
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -147,16 +255,35 @@
 import {
   AcademicCapIcon,
   BookOpenIcon,
-  ClockIcon
+  ClockIcon,
+  Cog6ToothIcon,
+  SwatchIcon,
+  XMarkIcon,
+  CheckIcon
 } from '@heroicons/vue/24/outline'
 
 // State
 const activeTab = ref<'modules' | 'path'>('modules')
 const showInstructions = ref(true)
 const showModuleCreator = ref(false)
+const showPathManager = ref(false)
+const showMobilePathSelector = ref(false)
 
 // Composables
-const { moduleCount, totalDuration, formatDuration } = useLearningPath()
+const {
+  moduleCount,
+  totalDuration,
+  overallProgress,
+  formatDuration,
+  currentLearningPath,
+  activePathId
+} = useLearningPath()
+
+const {
+  switchToPath,
+  startCreatePath,
+  filteredPaths
+} = usePathManager()
 
 // Methods
 const handleModuleCreated = (module: any) => {
@@ -166,10 +293,26 @@ const handleModuleCreated = (module: any) => {
   activeTab.value = 'modules'
 }
 
+const selectPath = (pathId: string) => {
+  switchToPath(pathId)
+  showMobilePathSelector.value = false
+}
+
+const createNewPath = () => {
+  startCreatePath()
+  showMobilePathSelector.value = false
+  showPathManager.value = true
+}
+
 // Hide instructions if user has already started
 onMounted(() => {
-  if (moduleCount.value > 0) {
-    showInstructions.value = false
+  try {
+    if (moduleCount?.value > 0 || (filteredPaths?.value?.length > 0 && filteredPaths.value[0]?.modules?.length > 0)) {
+      showInstructions.value = false
+    }
+  } catch (error) {
+    console.warn('Error in onMounted:', error)
+    // Keep instructions visible if there's an error
   }
 })
 

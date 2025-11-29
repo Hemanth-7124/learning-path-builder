@@ -1,15 +1,44 @@
-import type { Module, LearningPath, ModuleStatus, QuizAttempt, Certificate, CustomQuestion, CustomQuestionBank, ImportedQuestion } from '~/types'
+import type {
+  Module,
+  LearningPath,
+  LearningPathManager,
+  ModuleStatus,
+  QuizAttempt,
+  Certificate,
+  CustomQuestion,
+  CustomQuestionBank,
+  ImportedQuestion,
+  CreatePathData,
+  PathStatistics,
+  MigrationResult
+} from '~/types'
+import { storage, pathStorage, migrationStorage } from '~/utils/storage'
 import { formatDuration } from '~/utils/formatting'
 
-const LEARNING_PATH_KEY = 'learning-path'
-const CUSTOM_MODULES_KEY = 'custom-modules'
-const QUIZ_ATTEMPTS_KEY = 'quiz-attempts'
-const CERTIFICATES_KEY = 'certificates'
-const CUSTOM_QUESTIONS_KEY = 'custom-module-questions'
-const QUESTION_IMPORTS_KEY = 'imported-questions'
-
 export const useLearningPath = () => {
-  // Sample modules data
+  // Multi-path state
+  const learningPaths = useState<LearningPath[]>('learning-paths', () => [])
+  const activePathId = useState<string>('active-path-id', () => '')
+  const pathManager = useState<LearningPathManager>('path-manager', () => ({
+    paths: [],
+    activePathId: '',
+    defaultPathId: '',
+    settings: {
+      autoSave: true,
+      showArchived: false,
+      defaultColor: '#6366f1'
+    }
+  }))
+
+  // Current active learning path (reactive)
+  const currentLearningPath = computed(() => {
+    if (!learningPaths.value || !Array.isArray(learningPaths.value)) {
+      return null
+    }
+    return learningPaths.value.find(path => path.id === activePathId.value) || null
+  })
+
+  // Sample modules data (global, shared across all paths)
   const sampleModules: Module[] = [
     {
       id: 'html-basics',
@@ -21,6 +50,9 @@ export const useLearningPath = () => {
       icon: '🌐',
       status: 'not-started',
       progress: 0,
+      pathId: '', // Will be set when added to a path
+      addedAt: new Date(),
+      position: 0,
       prerequisites: [],
       learningObjectives: [
         'Understand HTML document structure',
@@ -49,6 +81,9 @@ export const useLearningPath = () => {
       icon: '🎨',
       status: 'not-started',
       progress: 0,
+      pathId: '',
+      addedAt: new Date(),
+      position: 0,
       prerequisites: ['HTML Fundamentals'],
       learningObjectives: [
         'Understand CSS syntax and selectors',
@@ -78,6 +113,9 @@ export const useLearningPath = () => {
       icon: '⚡',
       status: 'not-started',
       progress: 0,
+      pathId: '',
+      addedAt: new Date(),
+      position: 0,
       prerequisites: ['HTML Fundamentals', 'CSS Essentials'],
       learningObjectives: [
         'Understand JavaScript syntax and data types',
@@ -111,7 +149,10 @@ export const useLearningPath = () => {
       duration: 300,
       category: 'Web Development',
       difficulty: 'Intermediate',
-      icon: '⚛️'
+      icon: '⚛️',
+      pathId: '',
+      addedAt: new Date(),
+      position: 0
     },
     {
       id: 'nodejs-basics',
@@ -120,7 +161,10 @@ export const useLearningPath = () => {
       duration: 280,
       category: 'Backend Development',
       difficulty: 'Intermediate',
-      icon: '🟢'
+      icon: '🟢',
+      pathId: '',
+      addedAt: new Date(),
+      position: 0
     },
     {
       id: 'database-basics',
@@ -129,7 +173,10 @@ export const useLearningPath = () => {
       duration: 200,
       category: 'Backend Development',
       difficulty: 'Intermediate',
-      icon: '🗄️'
+      icon: '🗄️',
+      pathId: '',
+      addedAt: new Date(),
+      position: 0
     },
     {
       id: 'git-basics',
@@ -138,7 +185,10 @@ export const useLearningPath = () => {
       duration: 150,
       category: 'DevOps',
       difficulty: 'Beginner',
-      icon: '📦'
+      icon: '📦',
+      pathId: '',
+      addedAt: new Date(),
+      position: 0
     },
     {
       id: 'docker-basics',
@@ -147,7 +197,10 @@ export const useLearningPath = () => {
       duration: 220,
       category: 'DevOps',
       difficulty: 'Intermediate',
-      icon: '🐳'
+      icon: '🐳',
+      pathId: '',
+      addedAt: new Date(),
+      position: 0
     },
     {
       id: 'react-native-basics',
@@ -156,7 +209,10 @@ export const useLearningPath = () => {
       duration: 320,
       category: 'Mobile Development',
       difficulty: 'Intermediate',
-      icon: '📱'
+      icon: '📱',
+      pathId: '',
+      addedAt: new Date(),
+      position: 0
     },
     {
       id: 'python-basics',
@@ -165,7 +221,10 @@ export const useLearningPath = () => {
       duration: 260,
       category: 'Data Science',
       difficulty: 'Beginner',
-      icon: '🐍'
+      icon: '🐍',
+      pathId: '',
+      addedAt: new Date(),
+      position: 0
     },
     {
       id: 'communication-skills',
@@ -174,7 +233,10 @@ export const useLearningPath = () => {
       duration: 180,
       category: 'Soft Skills',
       difficulty: 'Beginner',
-      icon: '💬'
+      icon: '💬',
+      pathId: '',
+      addedAt: new Date(),
+      position: 0
     },
     {
       id: 'project-management',
@@ -183,171 +245,343 @@ export const useLearningPath = () => {
       duration: 200,
       category: 'Soft Skills',
       difficulty: 'Intermediate',
-      icon: '📋'
+      icon: '📋',
+      pathId: '',
+      addedAt: new Date(),
+      position: 0
     }
   ]
 
-  // State
-  const learningPath = useState<LearningPath>('learning-path', () => ({
-    modules: [],
-    totalDuration: 0,
-    lastUpdated: new Date(),
-    name: 'My Learning Path'
-  }))
+  // Path-specific state
+  const customModules = computed(() => {
+    if (!activePathId.value || typeof window === 'undefined') return []
+    try {
+      return pathStorage.getPathData(activePathId.value, 'custom-modules', [])
+    } catch (error) {
+      console.error('Error loading custom modules:', error)
+      return []
+    }
+  })
 
-  const customModules = useState<Module[]>('custom-modules', () => [])
+  const quizAttempts = computed(() => {
+    if (!activePathId.value || typeof window === 'undefined') return []
+    try {
+      return pathStorage.getPathData(activePathId.value, 'quiz-attempts', [])
+    } catch (error) {
+      console.error('Error loading quiz attempts:', error)
+      return []
+    }
+  })
 
-  // Quiz-related state
-  const quizAttempts = useState<QuizAttempt[]>('quiz-attempts', () => [])
-  const certificates = useState<Certificate[]>('certificates', () => [])
+  const certificates = computed(() => {
+    if (!activePathId.value || typeof window === 'undefined') return []
+    try {
+      return pathStorage.getPathData(activePathId.value, 'certificates', [])
+    } catch (error) {
+      console.error('Error loading certificates:', error)
+      return []
+    }
+  })
 
-  // Custom Questions state
-  const customQuestions = useState<CustomQuestionBank>('custom-module-questions', () => ({}))
+  const customQuestions = computed(() => {
+    if (!activePathId.value || typeof window === 'undefined') return {}
+    try {
+      return pathStorage.getPathData(activePathId.value, 'custom-questions', {})
+    } catch (error) {
+      console.error('Error loading custom questions:', error)
+      return {}
+    }
+  })
+
   const importedQuestions = useState<ImportedQuestion[]>('imported-questions', () => [])
 
   // Computed available modules that combines sample and custom modules
-  const availableModules = computed(() => [...sampleModules, ...customModules.value])
+  const availableModules = computed(() => {
+    try {
+      const custom = Array.isArray(customModules.value) ? customModules.value : []
+      return [...sampleModules, ...custom]
+    } catch (error) {
+      console.error('Error combining modules:', error)
+      return sampleModules
+    }
+  })
 
-  // Computed properties
-  const totalDuration = computed(() =>
-    learningPath.value.modules.reduce((total, module) => total + module.duration, 0)
-  )
+  // Computed properties for current path
+  const totalDuration = computed(() => {
+    try {
+      return currentLearningPath.value?.modules?.reduce((total, module) => total + (module.duration || 0), 0) || 0
+    } catch (error) {
+      console.error('Error calculating total duration:', error)
+      return 0
+    }
+  })
 
-  const moduleCount = computed(() => learningPath.value.modules.length)
+  const moduleCount = computed(() => {
+    try {
+      return currentLearningPath.value?.modules?.length || 0
+    } catch (error) {
+      console.error('Error calculating module count:', error)
+      return 0
+    }
+  })
 
-  // Methods
-  const calculateTotalDuration = (modules: Module[]): number => {
-    return modules.reduce((total, module) => total + module.duration, 0)
+  const overallProgress = computed(() => {
+    try {
+      return currentLearningPath.value?.overallProgress || 0
+    } catch (error) {
+      console.error('Error calculating overall progress:', error)
+      return 0
+    }
+  })
+
+  // === PATH MANAGEMENT METHODS ===
+
+  /**
+   * Create a new learning path
+   */
+  const createLearningPath = (pathData: CreatePathData): LearningPath => {
+    const newPath: LearningPath = {
+      id: `path-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: pathData.name,
+      description: pathData.description,
+      createdAt: new Date(),
+      lastUpdated: new Date(),
+      modules: [],
+      totalDuration: 0,
+      isActive: false,
+      isArchived: false,
+      color: pathData.color || pathManager.value.settings.defaultColor,
+      tags: pathData.tags || [],
+      completedModules: [],
+      overallProgress: 0
+    }
+
+    // Copy modules from existing path if specified
+    if (pathData.copyFromPathId) {
+      const sourcePath = learningPaths.value.find(p => p.id === pathData.copyFromPathId)
+      if (sourcePath) {
+        newPath.modules = sourcePath.modules.map(module => ({
+          ...module,
+          pathId: newPath.id,
+          addedAt: new Date(),
+          position: module.position
+        }))
+        newPath.totalDuration = sourcePath.totalDuration
+        newPath.overallProgress = 0 // Reset progress for new path
+      }
+    }
+
+    learningPaths.value.push(newPath)
+    saveLearningPaths()
+    return newPath
   }
 
+  /**
+   * Switch to a different learning path
+   */
+  const switchToPath = (pathId: string): boolean => {
+    const path = learningPaths.value.find(p => p.id === pathId)
+    if (!path) return false
+
+    // Deactivate current path
+    if (activePathId.value) {
+      const currentPath = learningPaths.value.find(p => p.id === activePathId.value)
+      if (currentPath) {
+        currentPath.isActive = false
+      }
+    }
+
+    // Activate new path
+    path.isActive = true
+    activePathId.value = pathId
+    pathManager.value.activePathId = pathId
+
+    saveLearningPaths()
+    return true
+  }
+
+  /**
+   * Delete a learning path and all its data
+   */
+  const deleteLearningPath = (pathId: string): boolean => {
+    const pathIndex = learningPaths.value.findIndex(p => p.id === pathId)
+    if (pathIndex === -1) return false
+
+    // Don't allow deletion of the only path
+    if (learningPaths.value.length === 1) {
+      console.warn('Cannot delete the only learning path')
+      return false
+    }
+
+    // If deleting active path, switch to another
+    if (pathId === activePathId.value) {
+      const remainingPaths = learningPaths.value.filter(p => p.id !== pathId)
+      if (remainingPaths.length > 0) {
+        switchToPath(remainingPaths[0].id)
+      }
+    }
+
+    // Remove path from array
+    learningPaths.value.splice(pathIndex, 1)
+
+    // Clear all path-specific data
+    pathStorage.clearPathData(pathId)
+
+    saveLearningPaths()
+    return true
+  }
+
+  /**
+   * Archive/unarchive a learning path
+   */
+  const archiveLearningPath = (pathId: string, archived: boolean = true): boolean => {
+    const path = learningPaths.value.find(p => p.id === pathId)
+    if (!path) return false
+
+    path.isArchived = archived
+    saveLearningPaths()
+    return true
+  }
+
+  /**
+   * Update learning path metadata
+   */
+  const updateLearningPath = (pathId: string, updates: Partial<LearningPath>): boolean => {
+    const path = learningPaths.value.find(p => p.id === pathId)
+    if (!path) return false
+
+    Object.assign(path, updates, { lastUpdated: new Date() })
+    saveLearningPaths()
+    return true
+  }
+
+  /**
+   * Get statistics for a learning path
+   */
+  const getPathStatistics = (pathId: string): PathStatistics | null => {
+    const path = learningPaths.value.find(p => p.id === pathId)
+    if (!path) return null
+
+    const pathQuizAttempts = pathStorage.getPathData(pathId, 'quiz-attempts', [])
+    const pathCertificates = pathStorage.getPathData(pathId, 'certificates', [])
+
+    const totalModules = path.modules.length
+    const completedModules = path.modules.filter(m => m.status === 'completed').length
+    const totalDuration = path.modules.reduce((total, module) => total + module.duration, 0)
+    const overallProgress = path.overallProgress
+    const quizAttempts = pathQuizAttempts.length
+    const certificates = pathCertificates.length
+    const averageScore = quizAttempts > 0
+      ? Math.round(pathQuizAttempts.reduce((sum, attempt) => sum + attempt.score, 0) / quizAttempts)
+      : 0
+
+    return {
+      totalModules,
+      completedModules,
+      totalDuration,
+      overallProgress,
+      quizAttempts,
+      certificates,
+      averageScore,
+      lastActivity: path.lastUpdated
+    }
+  }
+
+  // === MODULE MANAGEMENT METHODS ===
+
+  /**
+   * Add module to current learning path
+   */
   const addToLearningPath = (module: Module) => {
+    if (!currentLearningPath.value) return
+
     // Check if module is already in the learning path
-    if (!learningPath.value.modules.find(m => m.id === module.id)) {
-      // Add module with default progress tracking values
-      const moduleToAdd = {
-        ...module,
-        status: module.status || 'not-started',
-        progress: module.progress || 0
-      }
-      learningPath.value.modules.push(moduleToAdd)
-      learningPath.value.totalDuration = calculateTotalDuration(learningPath.value.modules)
-      learningPath.value.lastUpdated = new Date()
-      saveToLocalStorage()
+    if (currentLearningPath.value.modules.find(m => m.id === module.id)) return
+
+    // Add module with path-specific values
+    const moduleToAdd = {
+      ...module,
+      pathId: currentLearningPath.value.id,
+      addedAt: new Date(),
+      position: currentLearningPath.value.modules.length,
+      status: module.status || 'not-started',
+      progress: module.progress || 0
     }
+
+    currentLearningPath.value.modules.push(moduleToAdd)
+    currentLearningPath.value.totalDuration = calculateTotalDuration(currentLearningPath.value.modules)
+    currentLearningPath.value.lastUpdated = new Date()
+    updatePathProgress(currentLearningPath.value)
+    saveLearningPaths()
   }
 
+  /**
+   * Remove module from current learning path
+   */
   const removeFromLearningPath = (moduleId: string) => {
-    const index = learningPath.value.modules.findIndex(m => m.id === moduleId)
-    if (index > -1) {
-      learningPath.value.modules.splice(index, 1)
-      learningPath.value.totalDuration = calculateTotalDuration(learningPath.value.modules)
-      learningPath.value.lastUpdated = new Date()
-      saveToLocalStorage()
-    }
+    if (!currentLearningPath.value) return
+
+    const index = currentLearningPath.value.modules.findIndex(m => m.id === moduleId)
+    if (index === -1) return
+
+    currentLearningPath.value.modules.splice(index, 1)
+
+    // Update positions
+    currentLearningPath.value.modules.forEach((module, idx) => {
+      module.position = idx
+    })
+
+    currentLearningPath.value.totalDuration = calculateTotalDuration(currentLearningPath.value.modules)
+    currentLearningPath.value.lastUpdated = new Date()
+    updatePathProgress(currentLearningPath.value)
+    saveLearningPaths()
   }
 
+  /**
+   * Reorder modules in current learning path
+   */
   const reorderModules = (oldIndex: number, newIndex: number) => {
-    const [movedModule] = learningPath.value.modules.splice(oldIndex, 1)
-    learningPath.value.modules.splice(newIndex, 0, movedModule)
-    learningPath.value.lastUpdated = new Date()
-    saveToLocalStorage()
+    if (!currentLearningPath.value) return
+
+    const [movedModule] = currentLearningPath.value.modules.splice(oldIndex, 1)
+    currentLearningPath.value.modules.splice(newIndex, 0, movedModule)
+
+    // Update positions
+    currentLearningPath.value.modules.forEach((module, idx) => {
+      module.position = idx
+    })
+
+    currentLearningPath.value.lastUpdated = new Date()
+    saveLearningPaths()
   }
 
+  /**
+   * Clear current learning path
+   */
   const clearLearningPath = () => {
-    learningPath.value.modules = []
-    learningPath.value.totalDuration = 0
-    learningPath.value.lastUpdated = new Date()
-    saveToLocalStorage()
+    if (!currentLearningPath.value) return
+
+    currentLearningPath.value.modules = []
+    currentLearningPath.value.totalDuration = 0
+    currentLearningPath.value.completedModules = []
+    currentLearningPath.value.overallProgress = 0
+    currentLearningPath.value.lastUpdated = new Date()
+    saveLearningPaths()
   }
 
-  const saveToLocalStorage = () => {
-    if (import.meta.client) {
-      localStorage.setItem(LEARNING_PATH_KEY, JSON.stringify(learningPath.value))
-      localStorage.setItem(CUSTOM_MODULES_KEY, JSON.stringify(customModules.value))
-      localStorage.setItem(QUIZ_ATTEMPTS_KEY, JSON.stringify(quizAttempts.value))
-      localStorage.setItem(CERTIFICATES_KEY, JSON.stringify(certificates.value))
-    }
-  }
-
-  const loadFromLocalStorage = () => {
-    if (import.meta.client) {
-      // Load learning path
-      const savedPath = localStorage.getItem(LEARNING_PATH_KEY)
-      if (savedPath) {
-        try {
-          const data = JSON.parse(savedPath)
-          learningPath.value = {
-            ...data,
-            lastUpdated: new Date(data.lastUpdated),
-            lastProgressUpdate: data.lastProgressUpdate ? new Date(data.lastProgressUpdate) : undefined,
-            // Ensure modules have progress tracking fields
-            modules: data.modules?.map((module: any) => ({
-              ...module,
-              status: module.status || 'not-started',
-              progress: module.progress || 0
-            })) || []
-          }
-        } catch (error) {
-          console.error('Error loading learning path from localStorage:', error)
-        }
-      }
-
-      // Load custom modules
-      const savedModules = localStorage.getItem(CUSTOM_MODULES_KEY)
-      if (savedModules) {
-        try {
-          const modules = JSON.parse(savedModules)
-          customModules.value = Array.isArray(modules) ? modules : []
-        } catch (error) {
-          console.error('Error loading custom modules from localStorage:', error)
-          customModules.value = []
-        }
-      } else {
-        customModules.value = []
-      }
-
-      // Load quiz attempts
-      const savedQuizAttempts = localStorage.getItem(QUIZ_ATTEMPTS_KEY)
-      if (savedQuizAttempts) {
-        try {
-          const attempts = JSON.parse(savedQuizAttempts)
-          quizAttempts.value = Array.isArray(attempts) ? attempts.map((attempt: any) => ({
-            ...attempt,
-            timestamp: new Date(attempt.timestamp)
-          })) : []
-        } catch (error) {
-          console.error('Error loading quiz attempts from localStorage:', error)
-          quizAttempts.value = []
-        }
-      } else {
-        quizAttempts.value = []
-      }
-
-      // Load certificates
-      const savedCertificates = localStorage.getItem(CERTIFICATES_KEY)
-      if (savedCertificates) {
-        try {
-          const certs = JSON.parse(savedCertificates)
-          certificates.value = Array.isArray(certs) ? certs.map((cert: any) => ({
-            ...cert,
-            completionDate: new Date(cert.completionDate)
-          })) : []
-        } catch (error) {
-          console.error('Error loading certificates from localStorage:', error)
-          certificates.value = []
-        }
-      } else {
-        certificates.value = []
-      }
-    }
-  }
-
+  /**
+   * Check if module is in current learning path
+   */
   const isInLearningPath = (moduleId: string): boolean => {
-    return learningPath.value.modules.some(m => m.id === moduleId)
+    return currentLearningPath.value?.modules.some(m => m.id === moduleId) || false
   }
 
-  // Module Creation Methods
-  const createModule = (moduleData: Omit<Module, 'id'>): Module => {
+  // === CUSTOM MODULE METHODS ===
+
+  /**
+   * Create a new custom module
+   */
+  const createModule = (moduleData: Omit<Module, 'id' | 'pathId' | 'addedAt' | 'position'>): Module => {
     const id = moduleData.title.toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
@@ -356,34 +590,57 @@ export const useLearningPath = () => {
     const newModule: Module = {
       ...moduleData,
       id,
-      icon: moduleData.icon || getDefaultIcon(moduleData.category)
+      icon: moduleData.icon || getDefaultIcon(moduleData.category),
+      pathId: '', // Will be set when added to a path
+      addedAt: new Date(),
+      position: 0
     }
 
     return newModule
   }
 
-  const addCustomModule = (moduleData: Omit<Module, 'id'>): void => {
+  /**
+   * Add custom module to current path
+   */
+  const addCustomModule = (moduleData: Omit<Module, 'id' | 'pathId' | 'addedAt' | 'position'>): Module => {
+    if (!activePathId.value) throw new Error('No active path selected')
+
     const newModule = createModule(moduleData)
-    customModules.value.push(newModule)
-    saveToLocalStorage()
+
+    // Add to custom modules for this path
+    const customModulesList = [...customModules.value]
+    customModulesList.push(newModule)
+    pathStorage.setPathData(activePathId.value, 'custom-modules', customModulesList)
+
+    // Add to current learning path
+    addToLearningPath(newModule)
+
+    return newModule
   }
 
-  const getDefaultIcon = (category: string): string => {
-    const iconMap: Record<string, string> = {
-      'Web Development': '🌐',
-      'Backend Development': '⚙️',
-      'DevOps': '🔧',
-      'Mobile Development': '📱',
-      'Data Science': '📊',
-      'Soft Skills': '💡',
-      'Design': '🎨',
-      'Testing': '🧪',
-      'Security': '🔒',
-      'Database': '🗄️'
-    }
-    return iconMap[category] || '📚'
+  /**
+   * Remove custom module
+   */
+  const removeCustomModule = (moduleId: string): void => {
+    if (!activePathId.value) return
+
+    const customModulesList = customModules.value.filter(m => m.id !== moduleId)
+    pathStorage.setPathData(activePathId.value, 'custom-modules', customModulesList)
+
+    // Also remove from learning path if it's there
+    removeFromLearningPath(moduleId)
   }
 
+  /**
+   * Check if module is custom
+   */
+  const isCustomModule = (moduleId: string): boolean => {
+    return customModules.value.some(m => m.id === moduleId)
+  }
+
+  /**
+   * Validate module data
+   */
   const validateModule = (moduleData: Partial<Module>): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
@@ -413,154 +670,130 @@ export const useLearningPath = () => {
     }
   }
 
-  const removeCustomModule = (moduleId: string): void => {
-    const index = customModules.value.findIndex(m => m.id === moduleId)
-    if (index > -1) {
-      customModules.value.splice(index, 1)
-      // Also remove from learning path if it's there
-      removeFromLearningPath(moduleId)
-      saveToLocalStorage()
-    }
-  }
+  // === PROGRESS TRACKING METHODS ===
 
-  const isCustomModule = (moduleId: string): boolean => {
-    return customModules.value.some(m => m.id === moduleId)
-  }
-
-  // Progress Tracking Methods
+  /**
+   * Update module status in current path
+   */
   const updateModuleStatus = (moduleId: string, status: ModuleStatus): void => {
-    const module = learningPath.value.modules.find(m => m.id === moduleId)
-    if (module) {
-      module.status = status
-      if (status === 'completed') {
-        module.progress = 100
-        if (!learningPath.value.completedModules) {
-          learningPath.value.completedModules = []
-        }
-        if (!learningPath.value.completedModules.includes(moduleId)) {
-          learningPath.value.completedModules.push(moduleId)
-        }
-      } else if (status === 'quiz-passed') {
-        module.progress = 90
-        module.quizCompleted = true
-        if (learningPath.value.completedModules) {
-          learningPath.value.completedModules = learningPath.value.completedModules.filter(id => id !== moduleId)
-        }
-      } else if (status === 'quiz-required') {
-        module.progress = 75
-        if (learningPath.value.completedModules) {
-          learningPath.value.completedModules = learningPath.value.completedModules.filter(id => id !== moduleId)
-        }
-      } else if (status === 'in-progress') {
-        module.progress = 50
-        if (learningPath.value.completedModules) {
-          learningPath.value.completedModules = learningPath.value.completedModules.filter(id => id !== moduleId)
-        }
-      } else if (status === 'not-started') {
-        module.progress = 0
-        module.quizCompleted = false
-        if (learningPath.value.completedModules) {
-          learningPath.value.completedModules = learningPath.value.completedModules.filter(id => id !== moduleId)
-        }
+    if (!currentLearningPath.value) return
+
+    const module = currentLearningPath.value.modules.find(m => m.id === moduleId)
+    if (!module) return
+
+    module.status = status
+
+    if (status === 'completed') {
+      module.progress = 100
+      if (!currentLearningPath.value.completedModules.includes(moduleId)) {
+        currentLearningPath.value.completedModules.push(moduleId)
       }
-      learningPath.value.lastProgressUpdate = new Date()
-      learningPath.value.lastUpdated = new Date()
-      saveToLocalStorage()
+    } else {
+      module.progress = status === 'quiz-passed' ? 90 :
+                       status === 'quiz-required' ? 75 :
+                       status === 'in-progress' ? 50 : 0
+      // Remove from completed modules if status changed from completed
+      currentLearningPath.value.completedModules = currentLearningPath.value.completedModules.filter(id => id !== moduleId)
     }
+
+    currentLearningPath.value.lastProgressUpdate = new Date()
+    currentLearningPath.value.lastUpdated = new Date()
+    updatePathProgress(currentLearningPath.value)
+    saveLearningPaths()
   }
 
+  /**
+   * Update module progress in current path
+   */
   const updateModuleProgress = (moduleId: string, progress: number): void => {
-    const module = learningPath.value.modules.find(m => m.id === moduleId)
-    if (module) {
-      module.progress = Math.max(0, Math.min(100, progress))
-      if (module.progress === 100 && module.status !== 'completed') {
-        updateModuleStatus(moduleId, 'completed')
-      } else if (module.progress > 0 && module.status === 'not-started') {
-        module.status = 'in-progress'
-      } else if (module.progress === 0 && module.status === 'in-progress') {
-        module.status = 'not-started'
-      }
-      learningPath.value.lastProgressUpdate = new Date()
-      learningPath.value.lastUpdated = new Date()
-      saveToLocalStorage()
+    if (!currentLearningPath.value) return
+
+    const module = currentLearningPath.value.modules.find(m => m.id === moduleId)
+    if (!module) return
+
+    module.progress = Math.max(0, Math.min(100, progress))
+
+    if (module.progress === 100 && module.status !== 'completed') {
+      updateModuleStatus(moduleId, 'completed')
+    } else if (module.progress > 0 && module.status === 'not-started') {
+      module.status = 'in-progress'
+    } else if (module.progress === 0 && module.status !== 'not-started') {
+      module.status = 'not-started'
     }
+
+    currentLearningPath.value.lastProgressUpdate = new Date()
+    currentLearningPath.value.lastUpdated = new Date()
+    updatePathProgress(currentLearningPath.value)
+    saveLearningPaths()
   }
 
+  /**
+   * Get module status
+   */
   const getModuleStatus = (moduleId: string): ModuleStatus => {
-    const module = learningPath.value.modules.find(m => m.id === moduleId)
-    return module?.status || 'not-started'
+    return currentLearningPath.value?.modules.find(m => m.id === moduleId)?.status || 'not-started'
   }
 
+  /**
+   * Get module progress
+   */
   const getModuleProgress = (moduleId: string): number => {
-    const module = learningPath.value.modules.find(m => m.id === moduleId)
-    return module?.progress || 0
+    return currentLearningPath.value?.modules.find(m => m.id === moduleId)?.progress || 0
   }
 
+  /**
+   * Get completed modules count for current path
+   */
   const getCompletedModulesCount = (): number => {
-    return learningPath.value.modules.filter(m => m.status === 'completed').length
+    return currentLearningPath.value?.modules.filter(m => m.status === 'completed').length || 0
   }
 
+  /**
+   * Get overall progress for current path
+   */
   const getOverallProgress = (): number => {
-    if (learningPath.value.modules.length === 0) return 0
-
-    // Calculate the sum of progress from all modules
-    const totalProgress = learningPath.value.modules.reduce((sum, module) => {
-      // If module has progress value, use it
-      if (module.progress !== undefined) {
-        return sum + module.progress
-      }
-      // Otherwise, use status-based progress
-      if (module.status === 'completed') {
-        return sum + 100
-      }
-      if (module.status === 'in-progress') {
-        return sum + 50 // Default to 50% for in-progress without specific progress
-      }
-      // For 'not-started' status, progress is 0
-      return sum
-    }, 0)
-
-    // Calculate average progress
-    const averageProgress = totalProgress / learningPath.value.modules.length
-
-    // Round to nearest integer and ensure it's between 0-100
-    return Math.round(Math.max(0, Math.min(100, averageProgress)))
+    return currentLearningPath.value?.overallProgress || 0
   }
 
-  const isInProgress = (moduleId: string): boolean => {
-    return getModuleStatus(moduleId) === 'in-progress'
-  }
+  // === QUIZ METHODS ===
 
-  const isCompleted = (moduleId: string): boolean => {
-    return getModuleStatus(moduleId) === 'completed'
-  }
-
-  // Quiz-related Methods
+  /**
+   * Complete quiz and update path data
+   */
   const completeQuiz = (moduleId: string, quizAttempt: QuizAttempt): void => {
-    // Add quiz attempt to the attempts array
-    quizAttempts.value.push(quizAttempt)
+    if (!activePathId.value) return
 
-    // Find the module and update its quiz-related fields
-    const module = learningPath.value.modules.find(m => m.id === moduleId)
+    // Add pathId to quiz attempt
+    const pathQuizAttempt = { ...quizAttempt, pathId: activePathId.value }
+
+    // Add to path-specific quiz attempts
+    const attempts = [...quizAttempts.value, pathQuizAttempt]
+    pathStorage.setPathData(activePathId.value, 'quiz-attempts', attempts)
+
+    // Update module in current path
+    const module = currentLearningPath.value?.modules.find(m => m.id === moduleId)
     if (module) {
       if (!module.quizAttempts) {
         module.quizAttempts = []
       }
-      module.quizAttempts.push(quizAttempt)
+      module.quizAttempts.push(pathQuizAttempt)
 
-      if (quizAttempt.passed) {
-        // Update module status to quiz-passed
+      if (pathQuizAttempt.passed) {
         updateModuleStatus(moduleId, 'quiz-passed')
       }
     }
-
-    saveToLocalStorage()
   }
 
+  /**
+   * Get quiz attempts for current path
+   */
   const getQuizAttempts = (moduleId: string): QuizAttempt[] => {
     return quizAttempts.value.filter(attempt => attempt.moduleId === moduleId)
   }
 
+  /**
+   * Get quiz statistics for current path
+   */
   const getQuizStatistics = (moduleId: string) => {
     const attempts = getQuizAttempts(moduleId)
 
@@ -591,96 +824,68 @@ export const useLearningPath = () => {
     }
   }
 
-  const addCertificate = (certificate: Certificate): void => {
-    certificates.value.push(certificate)
+  // === CERTIFICATE METHODS ===
 
-    // Update the module with certificate information
-    const module = learningPath.value.modules.find(m => m.id === certificate.moduleId)
-    if (module) {
-      module.certificate = certificate
+  /**
+   * Add certificate to current path
+   */
+  const addCertificate = (certificate: Certificate): void => {
+    if (!activePathId.value || !currentLearningPath.value) return
+
+    // Add pathId and pathName to certificate
+    const pathCertificate = {
+      ...certificate,
+      pathId: activePathId.value,
+      pathName: currentLearningPath.value.name
     }
 
-    saveToLocalStorage()
+    // Add to path-specific certificates
+    const certs = [...certificates.value, pathCertificate]
+    pathStorage.setPathData(activePathId.value, 'certificates', certs)
+
+    // Update module with certificate information
+    const module = currentLearningPath.value.modules.find(m => m.id === certificate.moduleId)
+    if (module) {
+      module.certificate = pathCertificate
+    }
   }
 
+  /**
+   * Get certificates for current path
+   */
   const getCertificates = (): Certificate[] => {
     return certificates.value
   }
 
+  /**
+   * Get certificate for specific module in current path
+   */
   const getCertificate = (moduleId: string): Certificate | null => {
     return certificates.value.find(cert => cert.moduleId === moduleId) || null
   }
 
+  /**
+   * Check if module has certificate in current path
+   */
   const hasCertificate = (moduleId: string): boolean => {
     return certificates.value.some(cert => cert.moduleId === moduleId)
   }
 
-  // Custom Questions Management Functions
+  // === CUSTOM QUESTIONS METHODS ===
 
-  const loadCustomQuestions = () => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(CUSTOM_QUESTIONS_KEY)
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          customQuestions.value = parsed || {}
-          // Convert date strings back to Date objects
-          Object.keys(customQuestions.value).forEach(moduleId => {
-            customQuestions.value[moduleId] = customQuestions.value[moduleId].map(q => ({
-              ...q,
-              createdAt: new Date(q.createdAt),
-              updatedAt: q.updatedAt ? new Date(q.updatedAt) : undefined
-            }))
-          })
-        } catch (error) {
-          console.error('Error loading custom questions:', error)
-          customQuestions.value = {}
-        }
-      }
-    }
-  }
+  /**
+   * Add custom question to current path
+   */
+  const addCustomQuestion = (moduleId: string, questionData: Omit<CustomQuestion, 'id' | 'isCustom' | 'createdAt' | 'pathId'>) => {
+    if (!activePathId.value) throw new Error('No active path selected')
 
-  const saveCustomQuestions = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(CUSTOM_QUESTIONS_KEY, JSON.stringify(customQuestions.value))
-    }
-  }
-
-  const loadImportedQuestions = () => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(QUESTION_IMPORTS_KEY)
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          importedQuestions.value = parsed || []
-          // Convert date strings back to Date objects
-          importedQuestions.value = importedQuestions.value.map(iq => ({
-            ...iq,
-            importedAt: new Date(iq.importedAt)
-          }))
-        } catch (error) {
-          console.error('Error loading imported questions:', error)
-          importedQuestions.value = []
-        }
-      }
-    }
-  }
-
-  const saveImportedQuestions = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(QUESTION_IMPORTS_KEY, JSON.stringify(importedQuestions.value))
-    }
-  }
-
-  // CRUD Operations for Custom Questions
-  const addCustomQuestion = (moduleId: string, questionData: Omit<CustomQuestion, 'id' | 'isCustom' | 'createdAt'>) => {
-    // Validate required fields
-    if (!moduleId || !questionData.text || !questionData.options || questionData.options.length < 2) {
-      throw new Error('Invalid question data: moduleId, text, and at least 2 options are required')
+    if (!questionData.text || !questionData.options || questionData.options.length < 2) {
+      throw new Error('Invalid question data: text, and at least 2 options are required')
     }
 
-    if (!customQuestions.value[moduleId]) {
-      customQuestions.value[moduleId] = []
+    const pathQuestions = { ...customQuestions.value }
+    if (!pathQuestions[moduleId]) {
+      pathQuestions[moduleId] = []
     }
 
     const newQuestion: CustomQuestion = {
@@ -688,139 +893,270 @@ export const useLearningPath = () => {
       id: `custom-q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       isCustom: true,
       createdAt: new Date(),
+      pathId: activePathId.value,
       moduleId
     }
 
-    customQuestions.value[moduleId].push(newQuestion)
+    pathQuestions[moduleId].push(newQuestion)
+    pathStorage.setPathData(activePathId.value, 'custom-questions', pathQuestions)
+
+    // Update module question count
     updateModuleQuestionCount(moduleId)
-    saveCustomQuestions()
 
     return newQuestion
   }
 
-  const updateCustomQuestion = (moduleId: string, questionId: string, updates: Partial<CustomQuestion>) => {
-    const questions = customQuestions.value[moduleId]
-    if (!questions) return null
-
-    const questionIndex = questions.findIndex(q => q.id === questionId)
-    if (questionIndex === -1) return null
-
-    questions[questionIndex] = {
-      ...questions[questionIndex],
-      ...updates,
-      updatedAt: new Date()
-    }
-
-    saveCustomQuestions()
-    return questions[questionIndex]
-  }
-
-  const removeCustomQuestion = (moduleId: string, questionId: string) => {
-    const questions = customQuestions.value[moduleId]
-    if (!questions) return false
-
-    const initialLength = questions.length
-    customQuestions.value[moduleId] = questions.filter(q => q.id !== questionId)
-
-    // Check if questions still exist after filtering
-    if (customQuestions.value[moduleId] && customQuestions.value[moduleId].length === 0) {
-      delete customQuestions.value[moduleId]
-    }
-
-    updateModuleQuestionCount(moduleId)
-    saveCustomQuestions()
-
-    // Calculate result based on whether questions were actually removed
-    const currentQuestions = customQuestions.value[moduleId]
-    const currentLength = currentQuestions ? currentQuestions.length : 0
-
-    return currentLength < initialLength
-  }
-
+  /**
+   * Get custom questions for module in current path
+   */
   const getModuleCustomQuestions = (moduleId: string): CustomQuestion[] => {
     return customQuestions.value[moduleId] || []
   }
 
-  // Import Questions from Existing Question Bank
-  const importQuestionsFromBank = async (moduleId: string, questionIds: string[]) => {
-    try {
-      const { questionBank } = await import('~/data/questionBank')
+  // === UTILITY METHODS ===
 
-      questionIds.forEach(originalId => {
-        const originalQuestion = questionBank.find(q => q.id === originalId)
-        if (!originalQuestion) return
-
-        // Check if already imported
-        const alreadyImported = importedQuestions.value.some(
-          iq => iq.originalQuestionId === originalId && iq.targetModuleId === moduleId
-        )
-
-        if (alreadyImported) return
-
-        // Create custom question copy
-        const customQuestion: Omit<CustomQuestion, 'id' | 'isCustom' | 'createdAt'> = {
-          moduleId,
-          text: originalQuestion.text,
-          category: originalQuestion.category,
-          difficulty: originalQuestion.difficulty,
-          options: [...originalQuestion.options],
-          correctAnswer: originalQuestion.correctAnswer,
-          explanation: originalQuestion.explanation
-        }
-
-        addCustomQuestion(moduleId, customQuestion)
-
-        // Track import
-        importedQuestions.value.push({
-          originalQuestionId: originalId,
-          targetModuleId: moduleId,
-          importedAt: new Date()
-        })
-      })
-
-      saveImportedQuestions()
-    } catch (error) {
-      console.error('Error importing questions:', error)
-    }
+  /**
+   * Calculate total duration for a set of modules
+   */
+  const calculateTotalDuration = (modules: Module[]): number => {
+    return modules.reduce((total, module) => total + module.duration, 0)
   }
 
-  // Get all available questions for a module (custom + imported from bank)
-  const getAllQuestionsForModule = async (moduleId: string, category: string, difficulty: string) => {
-    try {
-      const customQuestions = getModuleCustomQuestions(moduleId)
-
-      // Get questions from main bank that match this module
-      const { getQuestionsByCategory } = await import('~/data/questionBank')
-      const bankQuestions = getQuestionsByCategory(category, difficulty as any, moduleId)
-
-      // Combine and return all questions
-      return [...customQuestions, ...bankQuestions]
-    } catch (error) {
-      console.error('Error getting all questions for module:', error)
-      return []
+  /**
+   * Update overall progress for a learning path
+   */
+  const updatePathProgress = (path: LearningPath): void => {
+    if (path.modules.length === 0) {
+      path.overallProgress = 0
+      return
     }
+
+    const totalProgress = path.modules.reduce((sum, module) => {
+      return sum + (module.progress || 0)
+    }, 0)
+
+    path.overallProgress = Math.round(totalProgress / path.modules.length)
   }
 
-  // Helper Functions
+  /**
+   * Get default icon for category
+   */
+  const getDefaultIcon = (category: string): string => {
+    const iconMap: Record<string, string> = {
+      'Web Development': '🌐',
+      'Backend Development': '⚙️',
+      'DevOps': '🔧',
+      'Mobile Development': '📱',
+      'Data Science': '📊',
+      'Soft Skills': '💡',
+      'Design': '🎨',
+      'Testing': '🧪',
+      'Security': '🔒',
+      'Database': '🗄️'
+    }
+    return iconMap[category] || '📚'
+  }
+
+  /**
+   * Update module question count
+   */
   const updateModuleQuestionCount = (moduleId: string) => {
     const module = availableModules.value.find(m => m.id === moduleId)
     if (module && isCustomModule(moduleId)) {
-      module.hasCustomQuestions = customQuestions.value[moduleId]?.length > 0
-      module.customQuestionCount = customQuestions.value[moduleId]?.length || 0
+      const questions = getModuleCustomQuestions(moduleId)
+      module.hasCustomQuestions = questions.length > 0
+      module.customQuestionCount = questions.length
     }
   }
 
-  // Load from localStorage on initialization
+  /**
+   * Save learning paths to storage
+   */
+  const saveLearningPaths = () => {
+    if (!pathManager.value.settings.autoSave) return
+
+    storage.set('learning-paths', learningPaths.value)
+    storage.set('active-path-id', activePathId.value)
+    storage.set('path-manager', pathManager.value)
+  }
+
+  /**
+   * Load learning paths from storage
+   */
+  const loadLearningPaths = () => {
+    // Check if migration is needed
+    if (migrationStorage.hasLegacyData()) {
+      console.log('Legacy data detected, performing migration...')
+      migrateFromSinglePath()
+      return
+    }
+
+    // Load multi-path data
+    const savedPaths = storage.get('learning-paths', [])
+    const savedActiveId = storage.get('active-path-id', '')
+    const savedManager = storage.get('path-manager', {
+      paths: [],
+      activePathId: '',
+      defaultPathId: '',
+      settings: {
+        autoSave: true,
+        showArchived: false,
+        defaultColor: '#6366f1'
+      }
+    })
+
+    learningPaths.value = Array.isArray(savedPaths) ? savedPaths : []
+    activePathId.value = savedActiveId || (learningPaths.value[0]?.id || '')
+    pathManager.value = savedManager
+
+    // If no paths exist, create a default one
+    if (learningPaths.value.length === 0) {
+      const defaultPath = createLearningPath({
+        name: 'My Learning Path',
+        description: 'Default learning path for your journey',
+        color: '#6366f1'
+      })
+      switchToPath(defaultPath.id)
+    }
+  }
+
+  /**
+   * Migrate from single-path to multi-path structure
+   */
+  const migrateFromSinglePath = (): MigrationResult => {
+    try {
+      migrationStorage.backupLegacyData()
+
+      const legacyData = migrationStorage.getLegacyData()
+      const result: MigrationResult = {
+        success: true,
+        pathsCreated: 0,
+        dataMigrated: {
+          modules: 0,
+          quizAttempts: 0,
+          certificates: 0,
+          customQuestions: 0
+        }
+      }
+
+      if (legacyData.learningPath) {
+        // Create new path from legacy data
+        const newPath: LearningPath = {
+          id: `path-${Date.now()}`,
+          name: legacyData.learningPath.name || 'Migrated Learning Path',
+          description: 'Migrated from previous version',
+          createdAt: new Date(),
+          lastUpdated: new Date(legacyData.learningPath.lastUpdated || Date.now()),
+          modules: legacyData.learningPath.modules?.map((module: any, index: number) => ({
+            ...module,
+            pathId: `path-${Date.now()}`,
+            addedAt: new Date(),
+            position: index
+          })) || [],
+          totalDuration: legacyData.learningPath.totalDuration || 0,
+          isActive: true,
+          isArchived: false,
+          color: '#6366f1',
+          tags: [],
+          completedModules: legacyData.learningPath.completedModules || [],
+          overallProgress: 0
+        }
+
+        // Calculate overall progress
+        updatePathProgress(newPath)
+
+        learningPaths.value.push(newPath)
+        activePathId.value = newPath.id
+        result.pathsCreated = 1
+        result.dataMigrated.modules = newPath.modules.length
+
+        // Migrate custom modules
+        if (legacyData.customModules && Array.isArray(legacyData.customModules)) {
+          pathStorage.setPathData(newPath.id, 'custom-modules', legacyData.customModules)
+        }
+
+        // Migrate quiz attempts
+        if (legacyData.quizAttempts && Array.isArray(legacyData.quizAttempts)) {
+          const attemptsWithPath = legacyData.quizAttempts.map((attempt: any) => ({
+            ...attempt,
+            pathId: newPath.id
+          }))
+          pathStorage.setPathData(newPath.id, 'quiz-attempts', attemptsWithPath)
+          result.dataMigrated.quizAttempts = attemptsWithPath.length
+        }
+
+        // Migrate certificates
+        if (legacyData.certificates && Array.isArray(legacyData.certificates)) {
+          const certsWithPath = legacyData.certificates.map((cert: any) => ({
+            ...cert,
+            pathId: newPath.id,
+            pathName: newPath.name
+          }))
+          pathStorage.setPathData(newPath.id, 'certificates', certsWithPath)
+          result.dataMigrated.certificates = certsWithPath.length
+        }
+
+        // Migrate custom questions
+        if (legacyData.customQuestions && typeof legacyData.customQuestions === 'object') {
+          const pathQuestions: { [moduleId: string]: CustomQuestion[] } = {}
+          Object.entries(legacyData.customQuestions).forEach(([moduleId, questions]) => {
+            if (Array.isArray(questions)) {
+              pathQuestions[moduleId] = questions.map((q: any) => ({
+                ...q,
+                pathId: newPath.id
+              }))
+            }
+          })
+          pathStorage.setPathData(newPath.id, 'custom-questions', pathQuestions)
+          result.dataMigrated.customQuestions = Object.values(pathQuestions).flat().length
+        }
+
+        // Migrate imported questions (global)
+        if (legacyData.importedQuestions && Array.isArray(legacyData.importedQuestions)) {
+          importedQuestions.value = legacyData.importedQuestions
+        }
+
+        // Save new structure
+        saveLearningPaths()
+
+        // Clear legacy data
+        migrationStorage.clearLegacyData()
+
+        console.log('Migration completed successfully', result)
+        return result
+      }
+
+      result.success = false
+      result.errors = ['No legacy data found']
+      return result
+
+    } catch (error) {
+      console.error('Migration failed:', error)
+      return {
+        success: false,
+        pathsCreated: 0,
+        dataMigrated: {
+          modules: 0,
+          quizAttempts: 0,
+          certificates: 0,
+          customQuestions: 0
+        },
+        errors: [error instanceof Error ? error.message : 'Unknown error occurred']
+      }
+    }
+  }
+
+  // Load data on initialization
   onMounted(() => {
-    loadFromLocalStorage()
-    loadCustomQuestions()
-    loadImportedQuestions()
+    loadLearningPaths()
   })
 
   return {
     // State
-    learningPath: readonly(learningPath),
+    learningPaths: readonly(learningPaths),
+    currentLearningPath: readonly(currentLearningPath),
     availableModules: readonly(availableModules),
+    customModules: readonly(customModules),
     quizAttempts: readonly(quizAttempts),
     certificates: readonly(certificates),
     customQuestions: readonly(customQuestions),
@@ -829,24 +1165,31 @@ export const useLearningPath = () => {
     // Computed
     totalDuration,
     moduleCount,
+    overallProgress,
+    activePathId: readonly(activePathId),
 
-    // Methods
+    // Path Management Methods
+    createLearningPath,
+    switchToPath,
+    deleteLearningPath,
+    archiveLearningPath,
+    updateLearningPath,
+    getPathStatistics,
+    loadLearningPaths,
+    saveLearningPaths,
+    migrateFromSinglePath,
+
+    // Module Management Methods
     addToLearningPath,
     removeFromLearningPath,
     reorderModules,
     clearLearningPath,
-    saveToLocalStorage,
-    loadFromLocalStorage,
-    formatDuration,
     isInLearningPath,
-
-    // Module Creation Methods
     createModule,
     addCustomModule,
     removeCustomModule,
     isCustomModule,
     validateModule,
-    getDefaultIcon,
 
     // Progress Tracking Methods
     updateModuleStatus,
@@ -855,28 +1198,24 @@ export const useLearningPath = () => {
     getModuleProgress,
     getCompletedModulesCount,
     getOverallProgress,
-    isInProgress,
-    isCompleted,
 
-    // Quiz-related Methods
+    // Quiz Methods
     completeQuiz,
     getQuizAttempts,
     getQuizStatistics,
+
+    // Certificate Methods
     addCertificate,
     getCertificates,
     getCertificate,
     hasCertificate,
 
-    // Custom Questions Management Methods
+    // Custom Questions Methods
     addCustomQuestion,
-    updateCustomQuestion,
-    removeCustomQuestion,
     getModuleCustomQuestions,
-    importQuestionsFromBank,
-    getAllQuestionsForModule,
-    loadCustomQuestions,
-    saveCustomQuestions,
-    loadImportedQuestions,
-    saveImportedQuestions
+
+    // Utility Methods
+    formatDuration,
+    getDefaultIcon
   }
 }

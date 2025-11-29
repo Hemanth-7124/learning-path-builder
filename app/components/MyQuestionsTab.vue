@@ -115,13 +115,34 @@ const getDifficultyClass = (difficulty: string) => {
   return classes[difficulty as keyof typeof classes] || 'bg-gray-100 text-gray-800'
 }
 
-const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(date)
+const formatDate = (date: Date | string | number) => {
+  try {
+    let dateObj: Date
+
+    if (date instanceof Date) {
+      dateObj = date
+    } else if (typeof date === 'string' || typeof date === 'number') {
+      dateObj = new Date(date)
+    } else {
+      return 'Invalid date'
+    }
+
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      console.warn('Invalid date provided:', date)
+      return 'Invalid date'
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(dateObj)
+  } catch (error) {
+    console.error('Error formatting date:', error, 'Input:', date)
+    return 'Invalid date'
+  }
 }
 </script>

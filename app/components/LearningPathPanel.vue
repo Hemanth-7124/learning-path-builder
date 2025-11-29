@@ -4,8 +4,19 @@
     <div class="p-6 bg-gradient-to-r from-white to-gray-50 border-b border-gray-200">
       <div class="flex justify-between items-start mb-4">
         <div>
-          <h2 class="mb-1 text-2xl font-bold text-gray-900">Your Learning Path</h2>
-          <p class="text-sm text-gray-600">Build and organize your personalized learning journey</p>
+          <div class="flex items-center gap-3 mb-1">
+            <div
+              v-if="currentLearningPath"
+              class="w-3 h-3 rounded-full"
+              :style="{ backgroundColor: currentLearningPath.color || '#6366f1' }"
+            ></div>
+            <h2 class="text-2xl font-bold text-gray-900">
+              {{ currentLearningPath?.name || 'Your Learning Path' }}
+            </h2>
+          </div>
+          <p class="text-sm text-gray-600">
+            {{ currentLearningPath?.description || 'Build and organize your personalized learning journey' }}
+          </p>
         </div>
         <button
           v-if="moduleCount > 0"
@@ -119,7 +130,7 @@
       <!-- Learning path modules -->
       <div v-else class="space-y-6 w-full">
         <div
-          v-for="(module, index) in learningPath.modules"
+          v-for="(module, index) in currentLearningPath?.modules"
           :key="module.id"
           class="relative transition-all duration-300 group/item hover:translate-x-2"
           :class="{
@@ -217,7 +228,7 @@
           </div>
           <div>
             <p class="text-xs font-medium text-gray-500">Last updated</p>
-            <p class="text-sm font-semibold text-gray-700">{{ formatDate(learningPath.lastUpdated) }}</p>
+            <p class="text-sm font-semibold text-gray-700">{{ formatDate(currentLearningPath?.lastUpdated) }}</p>
           </div>
         </div>
 
@@ -241,7 +252,7 @@
     <!-- Export Modal -->
     <ExportModal
       v-if="showExportModal"
-      :learning-path="learningPath"
+      :learning-path="currentLearningPath"
       @close="showExportModal = false"
       @error="handleExportError"
     />
@@ -295,9 +306,10 @@ import ExportModal from './ExportModal.vue'
 import ModulePreview from './ModulePreview.vue'
 import QuizModal from './QuizModal.vue'
 import CertificateModal from './CertificateModal.vue'
+import { formatDuration, formatDate } from '~/utils/formatting'
 
 const {
-  learningPath,
+  currentLearningPath,
   totalDuration,
   moduleCount,
   removeFromLearningPath,
@@ -400,12 +412,12 @@ const handleModuleDrop = (event: DragEvent, dropIndex: number) => {
 
   if (dragIndex !== null && dragIndex !== dropIndex) {
     console.log('Before reordering - dragIndex:', dragIndex, 'dropIndex:', dropIndex)
-    console.log('Current modules before:', learningPath.value.modules.map((m, i) => `${i}: ${m.title}`))
+    console.log('Current modules before:', currentLearningPath.value?.modules.map((m, i) => `${i}: ${m.title}`))
 
     // Use the existing reorderModules function from the composable
     reorderModules(dragIndex, dropIndex)
 
-    console.log('After reordering - new modules:', learningPath.value.modules.map((m, i) => `${i}: ${m.title}`))
+    console.log('After reordering - new modules:', currentLearningPath.value?.modules.map((m, i) => `${i}: ${m.title}`))
     console.log('Reordering completed and saved')
   } else {
     console.log('No reordering needed - same index or null')
@@ -512,14 +524,6 @@ const handleExportError = (message: string) => {
   console.error('Export error:', message)
 }
 
-const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(date)
-}
 </script>
 
 

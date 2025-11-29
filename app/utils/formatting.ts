@@ -37,28 +37,72 @@ export const getDifficultyClass = (difficulty: string): string => {
 
 /**
  * Formats date to a readable string
- * @param date - Date to format
+ * @param date - Date to format (can be Date object, string, or number)
  * @returns Formatted date string (e.g., "December 15, 2024")
  */
-export const formatDate = (date: Date): string => {
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+export const formatDate = (date: Date | string | number): string => {
+  try {
+    // Handle different date formats
+    let dateObj: Date
+
+    if (date instanceof Date) {
+      dateObj = date
+    } else if (typeof date === 'string' || typeof date === 'number') {
+      dateObj = new Date(date)
+    } else {
+      return 'Invalid date'
+    }
+
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      console.warn('Invalid date provided:', date)
+      return 'Invalid date'
+    }
+
+    return dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch (error) {
+    console.error('Error formatting date:', error, 'Input:', date)
+    return 'Invalid date'
+  }
 }
 
 /**
  * Formats date to a shorter format
- * @param date - Date to format
+ * @param date - Date to format (can be Date object, string, or number)
  * @returns Short date string (e.g., "Dec 15, 2024")
  */
-export const formatDateShort = (date: Date): string => {
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+export const formatDateShort = (date: Date | string | number): string => {
+  try {
+    // Handle different date formats
+    let dateObj: Date
+
+    if (date instanceof Date) {
+      dateObj = date
+    } else if (typeof date === 'string' || typeof date === 'number') {
+      dateObj = new Date(date)
+    } else {
+      return 'Invalid date'
+    }
+
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      console.warn('Invalid date provided:', date)
+      return 'Invalid date'
+    }
+
+    return dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch (error) {
+    console.error('Error formatting date:', error, 'Input:', date)
+    return 'Invalid date'
+  }
 }
 
 /**
