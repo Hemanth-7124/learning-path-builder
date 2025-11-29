@@ -57,15 +57,7 @@
             <div class="flex-1 min-w-0">
               <div class="flex justify-between items-center">
                 <p class="text-sm font-medium text-gray-900 truncate">{{ path.name }}</p>
-                <div class="flex gap-1 items-center">
-                  <button
-                    @click.stop="showPathDetails(path.id)"
-                    class="p-1 text-gray-400 transition-colors hover:text-indigo-600"
-                    title="View path details"
-                  >
-                    <InformationCircleIcon class="w-4 h-4" />
-                  </button>
-                </div>
+             
               </div>
               <div class="flex gap-2 items-center mt-1">
                 <span class="text-xs text-gray-500">{{ path.modules?.length || 0 }} modules</span>
